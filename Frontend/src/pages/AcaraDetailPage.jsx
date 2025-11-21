@@ -2,8 +2,10 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import publicApi from "../api/publicApi";
 import registrationApi from "../api/registrationApi";
-// --- 1. IMPORT IKON (Perubahan di sini) ---
-import { FaCalendarAlt, FaMapMarkerAlt, FaUsers } from 'react-icons/fa';
+// Menggunakan ikon profesional
+import { FaCalendarAlt, FaMapMarkerAlt, FaUsers, FaClock, FaShareAlt, FaTicketAlt } from 'react-icons/fa';
+import { format } from 'date-fns';
+import { id as localeId } from 'date-fns/locale';
 
 export default function AcaraDetailPage() {
   const { slug } = useParams();
@@ -12,21 +14,17 @@ export default function AcaraDetailPage() {
   const [acara, setAcara] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
   const [isRegistering, setIsRegistering] = useState(false);
   const [registerMessage, setRegisterMessage] = useState("");
 
-  // --- (Logika Fetch Data dan Pendaftaran tetap sama) ---
   useEffect(() => {
     const fetchAcaraDetail = async () => {
       try {
         setLoading(true);
         const response = await publicApi.getAcaraDetailBySlug(slug);
         setAcara(response.data);
-        setError(null);
       } catch (err) {
-        console.error("Gagal mengambil detail acara:", err);
-        setError("Gagal mengambil data acara. Mungkin acara tidak ditemukan.");
+        setError("Gagal mengambil data acara.");
       } finally {
         setLoading(false);
       }
@@ -39,161 +37,127 @@ export default function AcaraDetailPage() {
     setRegisterMessage("");
     try {
       const response = await registrationApi.daftarKeAcara(acara.id);
-      setRegisterMessage(response.data.message);
+      setRegisterMessage({ type: 'success', text: response.data.message });
     } catch (err) {
-      if (err.response) {
-        if (err.response.status === 401 || err.response.status === 419) {
-          navigate("/login", { 
-            state: { message: "Anda harus login untuk mendaftar acara." } 
-          });
-        } else if (err.response.status === 422) {
-          setRegisterMessage(err.response.data.message);
-        } else {
-          setRegisterMessage("Terjadi kesalahan. Silakan coba lagi.");
-        }
+      if (err.response?.status === 401) {
+        navigate("/login", { state: { message: "Login dulu yuk untuk mendaftar!" } });
       } else {
-        setRegisterMessage("Gagal terhubung ke server.");
+        setRegisterMessage({ type: 'error', text: err.response?.data?.message || "Gagal mendaftar." });
       }
-      console.error("Gagal mendaftar:", err);
     } finally {
       setIsRegistering(false);
     }
   };
 
-  // --- (Tampilan Loading & Error tetap sama) ---
-  if (loading) {
-    return <div className="text-center py-20 text-unila-medium text-lg">Memuat detail acara...</div>;
-  }
-  if (error) {
-    return <div className="text-center py-20 bg-red-100 text-red-700 rounded-lg p-8">{error}</div>;
-  }
-  if (!acara) {
-    return <div className="text-center py-20 text-unila-medium text-lg">Acara tidak ditemukan.</div>;
-  }
+  // Helper Format Tanggal (Menggunakan date-fns sesuai standar kawan Anda)
+  const formatDate = (dateStr, fmt) => {
+    if (!dateStr) return "-";
+    return format(new Date(dateStr), fmt, { locale: localeId });
+  };
 
-  // --- (Komponen InfoBox tetap sama) ---
-  const InfoBox = ({ icon, title, content }) => (
-    <div className="flex items-start">
-      <span className="text-unila-dark text-xl mr-3 mt-1">{icon}</span>
-      <div>
-        <h4 className="text-sm font-semibold text-unila-medium uppercase tracking-wide">{title}</h4>
-        <p className="text-md text-unila-deep font-medium">{content}</p>
-      </div>
-    </div>
-  );
+  if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div></div>;
+  if (!acara) return <div className="min-h-screen flex items-center justify-center text-gray-500">Acara tidak ditemukan</div>;
 
-  // --- (Tampilan Utama) ---
   return (
-    <div className="max-w-6xl mx-auto">
-      {/* Wrapper Konten Utama */}
-      <div className="bg-white rounded-lg shadow-xl overflow-hidden">
-        {/* Layout Grid: 2 Kolom (Poster & Info) */}
-        <div className="grid grid-cols-1 md:grid-cols-12">
+    <div className="bg-slate-50 min-h-screen pb-20 font-sans">
+      
+      {/* --- HEAD: BACKDROP IMAGE --- */}
+      <div className="relative w-full h-[350px] bg-secondary-900 overflow-hidden">
+        {acara.poster_url && (
+          <img 
+            src={acara.poster_url} 
+            alt="Background" 
+            className="w-full h-full object-cover opacity-40 blur-lg scale-105"
+          />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-50 via-transparent to-black/30"></div>
+      </div>
+
+      {/* --- CONTENT CONTAINER --- */}
+      <div className="container mx-auto px-4 sm:px-6 -mt-64 relative z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
-          {/* (Kolom Kiri: Poster tetap sama) */}
-          <div className="md:col-span-5">
-            <div className="w-full h-64 md:h-full bg-unila-light flex items-center justify-center">
-              {acara.poster_url ? (
-                <img 
-                  src={acara.poster_url} 
-                  alt={acara.judul} 
-                  className="w-full h-full object-cover" 
-                />
-              ) : (
-                <span className="text-unila-medium">Belum ada Poster</span>
-              )}
-            </div>
-          </div>
-
-          {/* Kolom Kanan: Detail Info & Tombol Daftar */}
-          <div className="md:col-span-7 p-6 md:p-8 flex flex-col justify-between">
-            <div>
-              {/* (Badge Kategori dan Judul tetap sama) */}
-              <span className="inline-block bg-unila-extradark text-white text-xs 
-                             font-semibold px-3 py-1 rounded-full uppercase mb-2">
-                {acara.kategori.nama_kategori}
-              </span>
-              <h1 className="text-3xl md:text-4xl font-bold text-unila-deep mb-4">
-                {acara.judul}
-              </h1>
-
-              {/* --- 2. PERUBAHAN DI SINI (Emoji diganti Ikon) --- */}
-              <div className="space-y-4 mb-6">
-                <InfoBox 
-                  icon={<FaCalendarAlt />} // Ganti emoji 🗓️
-                  title="Waktu" 
-                  content={`${new Date(acara.waktu_mulai).toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' })} WIB`} 
-                />
-                <InfoBox 
-                  icon={<FaMapMarkerAlt />} // Ganti emoji 📍
-                  title="Lokasi" 
-                  content={acara.lokasi} 
-                />
-                <InfoBox 
-                  icon={<FaUsers />} // Ganti emoji 👥
-                  title="Penyelenggara" 
-                  content={acara.penyelenggara.nama_penyelenggara} 
-                />
+          {/* == KOLOM KIRI (Poster & Deskripsi) == */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* Poster Utama */}
+            <div className="bg-white p-2 rounded-2xl shadow-2xl">
+              <div className="relative aspect-video bg-gray-100 rounded-xl overflow-hidden group">
+                {acara.poster_url ? (
+                  <img src={acara.poster_url} alt={acara.judul} className="w-full h-full object-contain bg-black/5" />
+                ) : (
+                   <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                     <FaTicketAlt className="text-4xl mb-2 opacity-50"/>
+                     <span>Poster Belum Tersedia</span>
+                   </div>
+                )}
+                {/* Badge Kategori */}
+                <div className="absolute top-4 left-4">
+                   <span className="bg-primary-600/90 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-lg uppercase tracking-wider">
+                     {acara.kategori?.nama_kategori}
+                   </span>
+                </div>
               </div>
             </div>
 
-            {/* (Tombol Daftar & Pesan Status tetap sama) */}
-            <div className="mt-6 md:mt-0">
-              <button 
-                onClick={handleDaftar} 
-                disabled={isRegistering}
-                className="w-full text-white font-bold py-3 px-6 rounded-lg text-lg
-                           bg-unila-dark hover:bg-unila-extradark 
-                           transition-all duration-300
-                           disabled:bg-unila-medium disabled:cursor-not-allowed"
-              >
-                {isRegistering ? "Memproses..." : "Daftar Acara Ini"}
-              </button>
-              
-              {registerMessage && (
-                <p className={`text-center mt-4 ${registerMessage.includes("berhasil") ? "text-green-600" : "text-red-600"}`}>
-                  {registerMessage}
-                </p>
-              )}
+            {/* Deskripsi Content */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+              <h3 className="text-2xl font-bold text-secondary-900 mb-6 border-b pb-4">Tentang Acara</h3>
+              <div className="prose prose-purple max-w-none text-gray-600 whitespace-pre-line leading-relaxed">
+                {acara.deskripsi}
+              </div>
             </div>
           </div>
+
+          {/* == KOLOM KANAN (Sidebar Sticky) == */}
+          <div className="lg:col-span-1">
+            <div className="sticky top-24 space-y-6">
+              
+              {/* Kartu Informasi Utama */}
+              <div className="bg-white rounded-2xl shadow-xl p-6 border-t-4 border-primary-500">
+                <h1 className="text-2xl font-extrabold text-gray-800 mb-6 leading-tight">{acara.judul}</h1>
+                
+                <div className="space-y-5 mb-8">
+                  <InfoRow icon={<FaCalendarAlt />} label="Tanggal" value={formatDate(acara.waktu_mulai, 'eeee, d MMMM yyyy')} />
+                  <InfoRow icon={<FaClock />} label="Waktu" value={`${formatDate(acara.waktu_mulai, 'HH:mm')} - ${formatDate(acara.waktu_selesai, 'HH:mm')} WIB`} />
+                  <InfoRow icon={<FaMapMarkerAlt />} label="Lokasi" value={acara.lokasi} />
+                  <InfoRow icon={<FaUsers />} label="Penyelenggara" value={acara.penyelenggara?.nama_penyelenggara} />
+                </div>
+
+                <button 
+                  onClick={handleDaftar}
+                  disabled={isRegistering}
+                  className="w-full bg-gradient-to-r from-primary-600 to-purple-600 text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-primary-500/30 hover:-translate-y-1 transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center gap-2"
+                >
+                  {isRegistering ? "Sedang Memproses..." : "Daftar Sekarang"}
+                </button>
+
+                {registerMessage && (
+                  <div className={`mt-4 p-3 rounded-lg text-sm text-center font-medium ${registerMessage.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+                    {registerMessage.text}
+                  </div>
+                )}
+              </div>
+
+              {/* Tombol Share Mockup */}
+              <button className="w-full flex items-center justify-center gap-2 text-gray-500 hover:text-primary-600 transition-colors py-3 border border-dashed border-gray-300 rounded-xl bg-white hover:bg-gray-50 font-medium">
+                <FaShareAlt /> Bagikan ke Teman
+              </button>
+            </div>
+          </div>
+
         </div>
       </div>
-
-      {/* (Bagian Deskripsi & ReadMore tetap sama) */}
-      <div className="bg-white rounded-lg shadow-xl mt-8 p-6 md:p-8">
-        <h2 className="text-2xl font-bold text-unila-deep mb-4 pb-2 border-b border-unila-light">
-          Deskripsi Acara
-        </h2>
-        
-        <ReadMore>
-          {acara.deskripsi}
-        </ReadMore>
-      </div>
     </div>
   );
 }
 
-// (Komponen ReadMore tetap sama)
-function ReadMore({ children, maxChars = 300 }) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const text = children;
-
-  if (text.length <= maxChars) {
-    return <p className="text-unila-dark leading-relaxed whitespace-pre-line">{text}</p>;
-  }
-
-  return (
+// Komponen Baris Info Kecil
+const InfoRow = ({ icon, label, value }) => (
+  <div className="flex items-start gap-4">
+    <div className="mt-1 text-primary-600 text-lg bg-purple-50 p-2.5 rounded-lg">{icon}</div>
     <div>
-      <p className="text-unila-dark leading-relaxed whitespace-pre-line">
-        {isExpanded ? text : `${text.substring(0, maxChars)}...`}
-      </p>
-      <button 
-        onClick={() => setIsExpanded(!isExpanded)} 
-        className="text-unila-dark font-semibold hover:underline mt-2"
-      >
-        {isExpanded ? "Tampilkan lebih sedikit" : "Baca selengkapnya"}
-      </button>
+      <p className="text-xs text-gray-400 uppercase font-bold tracking-wider mb-0.5">{label}</p>
+      <p className="text-gray-800 font-semibold leading-tight">{value}</p>
     </div>
-  );
-}
+  </div>
+);
