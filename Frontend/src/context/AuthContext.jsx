@@ -2,6 +2,7 @@
 // (PJ 1 - GATEKEEPER)
 
 import { createContext, useContext, useState } from 'react';
+import authApi from '../api/authApi';
 
 // Buat Context
 const AuthContext = createContext();
@@ -36,8 +37,29 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('AUTH_TOKEN');
   };
 
+  // Fungsi Login
+  const login = async (email, password) => {
+    const response = await authApi.login(email, password);
+    // Backend mengirim 'access_token', bukan 'token'
+    if (response.data.access_token && response.data.user) {
+      setAuthData(response.data.user, response.data.access_token);
+    }
+    return response;
+  };
+
+  // Fungsi Logout
+  const logout = async () => {
+    try {
+      await authApi.logout();
+    } catch (error) {
+      console.error("Error saat logout:", error);
+    } finally {
+      clearAuthData();
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, setAuthData, clearAuthData }}>
+    <AuthContext.Provider value={{ user, token, setAuthData, clearAuthData, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
