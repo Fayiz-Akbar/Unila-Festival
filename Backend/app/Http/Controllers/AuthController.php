@@ -80,7 +80,7 @@ class AuthController extends Controller
             'nama' => $request->nama,
             'email' => $request->email,
             'kata_sandi' => Hash::make($request->password), // Hash password
-            'peran' => 'pengguna', // Default role (sesuaikan dengan enum di db jika ada)
+            'peran' => 'User', // Default role (sesuaikan dengan enum di db jika ada)
         ]);
 
         // Auto login setelah register
