@@ -1,92 +1,90 @@
 // Frontend/src/components/Common/Navbar.jsx
-// (PJ 1 - GATEKEEPER) - Navbar dengan logika Auth
+// (PJ 1 - GATEKEEPER) - Header Dark Mode Sesuai Mockup
 
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext'; // Mengakses data auth
-import axiosClient from '../../api/axiosClient'; // Untuk panggil endpoint logout
-import Button from './button'; 
+import { useAuth } from '../../context/AuthContext';
+import axiosClient from '../../api/axiosClient';
+import Button from './Button';
 
 export default function Navbar() {
-  // Ambil user, token, dan fungsi logout dari AuthContext
   const { user, clearAuthData } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
     try {
-      // Panggil endpoint logout di Backend (yang membatalkan token/cookie)
       await axiosClient.post('/logout');
     } catch (e) {
-      console.error('Gagal logout di backend:', e);
+      console.error('Logout error:', e);
     } finally {
-      // Hapus data Auth di Frontend
       clearAuthData();
-      navigate('/login'); // Arahkan ke halaman login
+      navigate('/login');
     }
   };
   
-  // Tentukan rute navigasi utama
+  // Link navigasi (Teks Putih)
   const navLinks = [
       { to: '/', label: 'Event' },
-      // Tampilkan "Agenda Saya" hanya jika user sudah login
       ...(user ? [{ to: '/agenda-saya', label: 'Agenda Saya' }] : []),
   ];
 
   return (
-    // Navbar menggunakan background putih bersih (Opsi 2)
-    <nav className="bg-white shadow-md border-b border-gray-100">
+    // Background menggunakan warna Secondary (#1A202C)
+    <nav className="bg-secondary shadow-lg border-b border-gray-800 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16 items-center">
+        <div className="flex justify-between h-20 items-center">
           
-          {/* Logo Brand */}
-          <Link to="/" className="flex-shrink-0">
-            <span className="text-2xl font-bold text-secondary">
-              Unila<span className="text-primary">Fest</span>
+          {/* LOGO: Unila (Orange) + Fest (Putih) */}
+          <Link to="/" className="flex-shrink-0 flex items-center gap-2 group">
+            {/* Opsional: Jika ada logo gambar, taruh di sini */}
+            <span className="text-3xl font-extrabold tracking-tight">
+              <span className="text-primary group-hover:text-primary-hover transition-colors">Unila</span>
+              <span className="text-white">Fest</span>
             </span>
           </Link>
 
-          {/* Link Navigasi Utama */}
-          <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
+          {/* NAVIGASI TENGAH (Desktop) */}
+          <div className="hidden sm:flex sm:space-x-8">
               {navLinks.map((link) => (
                   <Link
                       key={link.to}
                       to={link.to}
-                      // Gunakan kelas Amber/Primary untuk link aktif atau hover
-                      className="inline-flex items-center px-1 pt-1 text-sm font-medium text-secondary hover:text-primary border-b-2 border-transparent hover:border-primary transition-colors"
+                      className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-300 hover:text-white hover:border-b-2 hover:border-primary transition-all h-full"
                   >
                       {link.label}
                   </Link>
               ))}
           </div>
 
-          {/* Area Akun dan Auth */}
+          {/* TOMBOL LOGIN/DAFTAR (Kanan) */}
           <div className="flex items-center space-x-4">
             {user ? (
-              // --- TAMPILAN JIKA SUDAH LOGIN ---
-              <div className="flex items-center space-x-4">
-                {/* Nama Pengguna / Status Akun */}
-                <span className="text-sm font-medium text-secondary">
-                  <Link 
-                    to={user.peran === 'Admin' ? '/admin/dashboard' : '/'} 
-                    className='font-bold text-primary hover:underline'
-                  >
-                    {user.nama}
-                  </Link>
+              <div className="flex items-center gap-4">
+                <span className="text-sm text-gray-300 hidden md:block">
+                  Halo, <span className="font-bold text-primary">{user.nama}</span>
                 </span>
-                
-                {/* Tombol Logout */}
-                <Button onClick={handleLogout} variant="light" className="text-sm text-secondary border border-gray-300">
+                <Button 
+                    onClick={handleLogout} 
+                    className="bg-gray-700 text-white hover:bg-gray-600 border border-gray-600 text-xs px-3 py-1.5"
+                >
                   Logout
                 </Button>
               </div>
             ) : (
-              // --- TAMPILAN JIKA BELUM LOGIN ---
-              <div className="flex items-center space-x-3">
-                <Link to="/login" className="text-sm font-medium text-secondary hover:text-primary transition-colors">
-                  Login
+              <div className="flex items-center gap-3">
+                {/* Login: Teks Putih/Abu */}
+                <Link 
+                    to="/login" 
+                    className="text-sm font-medium text-gray-300 hover:text-white transition-colors"
+                >
+                  Masuk
                 </Link>
-                <Button to="/register" as={Link} variant="primary">
-                  Daftar
-                </Button>
+                {/* Daftar: Tombol Orange */}
+                <Link
+                    to="/register"
+                    className="bg-primary text-white px-5 py-2 rounded-full text-sm font-bold hover:bg-primary-hover shadow-lg hover:shadow-orange-500/20 transition-all transform hover:-translate-y-0.5"
+                >
+                  Daftar Sekarang
+                </Link>
               </div>
             )}
           </div>

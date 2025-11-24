@@ -1,31 +1,29 @@
 @import "tailwindcss";
 
-/* * --- OPSI 2: THE GOLDEN SIGER (Emas & Gelap) ---
- * Pilihan warna untuk nuansa Festival yang Elegan (Amber/Emas dan Dark Slate).
- * Warna Primary akan menjadi Amber/Emas.
- */
+/* --- TEMA: THE GOLDEN SIGER (Dark & Orange Edition) --- */
 @theme {
-  /* Primary Brand Color: Amber 600 (Aksen utama untuk tombol, link, dan highlight) */
-  --color-primary: #d97706; 
-  --color-primary-hover: #b45309; /* Amber 700 untuk efek hover */
+  /* Primary: Orange/Emas Unila (Untuk teks 'Unila' dan tombol utama) */
+  --color-primary: #ed8936; /* Orange yang lebih vibrant di background gelap */
+  --color-primary-hover: #dd6b20; 
   
-  /* Secondary Color / Dark Text Color: Slate 800 (Digunakan untuk Sidebar Admin) */
-  --color-secondary: #1e293b; 
+  /* Secondary: Warna Gelap Mockup (#1A202C) - Digunakan untuk Navbar & Footer */
+  --color-secondary: #1A202C; 
 
-  /* Light Background Color: Amber 50 (Background halaman User) */
-  --color-bg-body: #fffbeb; 
-  
-  /* Main Text Color: Stone 900 */
-  --color-text-main: #1c1917;
+  /* Variasi Putih/Abu untuk teks di background gelap */
+  --color-text-light: #f7fafc;
+  --color-text-gray: #a0aec0;
 
-  /* Custom shades (Amber) yang dibutuhkan oleh komponen seperti AdminLayout */
-  --color-primary-100: #fef3c7; /* Amber 100 (Untuk latar belakang elemen yang aktif/hover ringan) */
-  --color-primary-600: #d97706; /* Amber 600 (Sama dengan primary) */
+  /* Background Body (Tetap terang agar konten mudah dibaca) */
+  --color-bg-body: #f7fafc; /* Gray-50 */
+  --color-text-main: #1A202C; /* Sama dengan secondary */
+
+  /* Helper colors */
+  --color-primary-100: #feebc8; 
 }
 
-/* Base styles untuk memastikan seluruh body menggunakan tema yang dipilih */
 body {
   background-color: var(--color-bg-body);
   color: var(--color-text-main);
-  /* Tambahkan font-family jika sudah didefinisikan secara global */
+  /* Font family default */
+  font-family: system-ui, -apple-system, sans-serif;
 }
