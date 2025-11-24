@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
 {
@@ -28,31 +29,43 @@ class AuthController extends Controller
             ], 422);
         }
 
-        // 2. Cari User berdasarkan Email
-        $user = User::where('email', $request->email)->first();
+        try {
+            // 2. Cari User berdasarkan Email
+            // Menggunakan with() untuk memuat relasi. Jika nama kolom salah, ini akan melempar Exception.
+            $user = User::with('penyelenggaraYangDikelola')
+                        ->where('email', $request->email)
+                        ->first();
 
-        // 3. Cek Password Manual (Karena kolom database 'kata_sandi')
-        if (!$user || !Hash::check($request->password, $user->kata_sandi)) {
+            // 3. Cek Password
+            if (!$user || !Hash::check($request->password, $user->kata_sandi)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Email atau kata sandi salah.',
+                ], 401);
+            }
+
+            // 4. Buat Token (Sanctum)
+            $token = $user->createToken('auth_token')->plainTextToken;
+
+            // 5. Return Response Sukses
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Login berhasil',
+                'access_token' => $token,
+                'token_type' => 'Bearer',
+                'user' => $user
+            ], 200);
+
+        } catch (\Throwable $e) {
+            // LOG ERROR UNTUK DEBUGGING
+            // Ini akan mengirim pesan error SQL asli ke Frontend agar Anda bisa melihat penyebabnya (misal: "Column not found: status_tautan")
+            Log::error("Login Error: " . $e->getMessage());
+            
             return response()->json([
                 'status' => 'error',
-                'message' => 'Email atau kata sandi salah.',
-            ], 401);
+                'message' => 'Terjadi kesalahan server: ' . $e->getMessage(), // Pesan error spesifik
+            ], 500);
         }
-
-        // 4. Hapus token lama (Opsional - untuk single session)
-        // $user->tokens()->delete();
-
-        // 5. Buat Token Baru (Sanctum)
-        $token = $user->createToken('auth_token')->plainTextToken;
-
-        // 6. Return Response
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Login berhasil',
-            'access_token' => $token,
-            'token_type' => 'Bearer',
-            'user' => $user
-        ], 200);
     }
 
     /**
@@ -62,8 +75,7 @@ class AuthController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'nama' => 'required|string|max:255',
-            // Pastikan tabel di database benar-benar bernama 'pengguna'
-            'email' => 'required|string|email|max:255|unique:pengguna,email', 
+            'email' => 'required|string|email|max:255|unique:pengguna,email',
             'password' => 'required|string|min:8',
         ]);
 
@@ -75,24 +87,37 @@ class AuthController extends Controller
             ], 422);
         }
 
-        // Buat user baru
-        $user = User::create([
-            'nama' => $request->nama,
-            'email' => $request->email,
-            'kata_sandi' => Hash::make($request->password), // Hash password
-            'peran' => 'User', // Default role (sesuaikan dengan enum di db jika ada)
-        ]);
+        try {
+            $user = User::create([
+                'nama' => $request->nama,
+                'email' => $request->email,
+                'kata_sandi' => Hash::make($request->password),
+                'peran' => 'User',
+            ]);
 
-        // Auto login setelah register
-        $token = $user->createToken('auth_token')->plainTextToken;
+            $token = $user->createToken('auth_token')->plainTextToken;
+            
+            // Coba load relasi, jika gagal biarkan user login tanpa relasi dulu
+            try {
+                $user->load('penyelenggaraYangDikelola');
+            } catch (\Exception $e) {
+                // Abaikan error relasi saat register agar user tetap bisa masuk
+            }
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Registrasi berhasil',
-            'access_token' => $token,
-            'token_type' => 'Bearer',
-            'user' => $user
-        ], 201);
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Registrasi berhasil',
+                'access_token' => $token,
+                'token_type' => 'Bearer',
+                'user' => $user
+            ], 201);
+
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal registrasi: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**
@@ -111,14 +136,22 @@ class AuthController extends Controller
     }
 
     /**
-     * Get Current User (Profile)
-     * Penting untuk Context di Frontend
+     * Get Current User
      */
     public function me(Request $request)
     {
-        return response()->json([
-            'status' => 'success',
-            'user' => $request->user()
-        ], 200);
+        try {
+            $user = $request->user()->load('penyelenggaraYangDikelola');
+            return response()->json([
+                'status' => 'success',
+                'user' => $user
+            ], 200);
+        } catch (\Throwable $e) {
+             // Fallback jika relasi error, kembalikan user saja
+             return response()->json([
+                'status' => 'success',
+                'user' => $request->user()
+            ], 200);
+        }
     }
 }

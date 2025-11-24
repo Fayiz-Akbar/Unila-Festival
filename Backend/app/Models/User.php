@@ -15,7 +15,7 @@ class User extends Authenticatable
     /**
      * Menunjuk ke tabel 'pengguna' di database.
      */
-    protected $table = 'pengguna';
+    protected $table = 'pengguna'; // Sesuaikan jika nama tabelnya 'users' atau 'pengguna'
 
     /**
      * The attributes that are mass assignable.
@@ -27,8 +27,8 @@ class User extends Authenticatable
         'email',
         'kata_sandi',
         'peran',
-        'email_verified_at', // <-- TAMBAHKAN INI
-        'remember_token',    // <-- TAMBAHKAN INI
+        'email_verified_at',
+        'remember_token',
     ];
 
     /**
@@ -74,6 +74,7 @@ class User extends Authenticatable
 
     /**
      * Relasi Banyak-ke-Banyak: Satu Pengguna bisa mengelola banyak Penyelenggara.
+     * Mengakses tabel pivot 'pengelola_penyelenggara'
      */
     public function penyelenggaraYangDikelola()
     {
@@ -88,6 +89,7 @@ class User extends Authenticatable
     public function acaraYangDidafari()
     {
         return $this->belongsToMany(Acara::class, 'pendaftaran_acara', 'id_pengguna', 'id_acara')
+            ->withPivot('status_pendaftaran', 'tanggal_daftar')
             ->withTimestamps();
     }
 }

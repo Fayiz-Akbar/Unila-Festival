@@ -86,7 +86,7 @@ export default function Footer() {
               </li>
               <li className="flex items-center">
                 <span className="mr-3 text-primary"></span>
-                <a href="mailto:fayizakbar26@gmail.com" className="hover:text-primary transition">fayizakbar26@gmail.com</a>
+                <a href="mailto:humas@unilafest.ac.id" className="hover:text-primary transition">humas@unilafest.ac.id</a>
               </li>
               <li className="flex items-center">
                 <span className="mr-3 text-primary"></span>
