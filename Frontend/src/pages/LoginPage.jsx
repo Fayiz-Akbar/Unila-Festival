@@ -1,8 +1,10 @@
+// Frontend/src/pages/LoginPage.jsx
+
 import { useState } from "react";
-import { useAuth } from "../context/AuthContext"; // Pastikan path ini benar
+import { useAuth } from "../context/AuthContext";
 import { useNavigate, Link } from "react-router-dom";
-import Input from "../components/Common/Input"; // Asumsi ada komponen Input generic
-import Button from "../components/Common/button"; // Asumsi ada komponen Button generic
+import Input from "../components/Common/Input";
+import Button from "../components/Common/button";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -18,12 +20,30 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      // Fungsi login ini diambil dari AuthContext yang memanggil authApi
-      await login(form.email, form.password);
-      navigate("/"); // Redirect ke Home setelah sukses
+      // 1. Panggil fungsi login dari AuthContext
+      // Fungsi ini mengembalikan response lengkap dari Axios
+      const response = await login(form.email, form.password);
+      
+      // 2. Ambil data user dari response backend
+      // Struktur: response -> data -> user
+      const user = response.data.user;
+
+      // 3. Cek Role (Peran) untuk menentukan arah redirect
+      // Kita cek 'admin' (huruf kecil) dan 'Admin' (kapital) untuk jaga-jaga
+      if (user.peran === 'admin' || user.peran === 'Admin') {
+        console.log("Login sebagai Admin, redirect ke Dashboard...");
+        navigate("/admin/dashboard");
+      } else {
+        console.log("Login sebagai User, redirect ke Home...");
+        navigate("/"); // Bisa juga diganti ke "/agenda-saya" jika ingin spesifik
+      }
+
     } catch (err) {
+      // Log error ke console untuk debugging
+      console.error("Login error:", err);
+      
       // Menangkap pesan error dari backend (response 401/422)
-      setError(err.response?.data?.message || "Login gagal. Periksa koneksi Anda.");
+      setError(err.response?.data?.message || "Login gagal. Periksa email dan kata sandi Anda.");
     } finally {
       setLoading(false);
     }
