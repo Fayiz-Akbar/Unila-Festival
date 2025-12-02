@@ -1,12 +1,12 @@
 // Frontend/src/router.jsx
 // (PJ 1 - GATEKEEPER) - Konfigurasi Router Utama
 
-import { createBrowserRouter, RouterProvider, Outlet } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import App from './App.jsx';
 
 // --- Components & Layouts ---
 import ProtectedRoute from './components/Common/ProtectedRoute.jsx';
-import AdminLayout from './components/Common/AdminLayout.jsx'; // Layout Admin (Sidebar dll)
+import AdminLayout from './components/Common/AdminLayout.jsx'; // Layout Admin
 import Layout from './components/Common/Layout.jsx'; // Layout Publik (Navbar & Footer)
 
 // --- Pages Publik/User ---
@@ -19,24 +19,24 @@ import AgendaSayaPage from './pages/AgendaSayaPage.jsx';
 // --- Admin Pages (PJ 1) ---
 import AdminDashboardPage from './pages/Admin/AdminDashboardPage.jsx';
 import AdminKategoriPage from './pages/Admin/AdminKategoriPage.jsx';
-import AdminValidasiPenyelenggaraPage from './pages/Admin/AdminValidasiPenyelenggaraPage.jsx'; // >> IMPORT BARU
-import AdminValidasiAcaraPage from './pages/Admin/AdminValidasiAcaraPage.jsx'; // >> IMPORT BARU
+import AdminValidasiPenyelenggaraPage from './pages/Admin/AdminValidasiPenyelenggaraPage.jsx';
+import AdminValidasiAcaraPage from './pages/Admin/AdminValidasiAcaraPage.jsx';
 
 const router = createBrowserRouter([
   {
-    element: <App />, // Root element
+    element: <App />, // Root element (biasanya berisi Global Providers/Toaster)
     children: [
       // ====================================================
-      // 1. HALAMAN STANDALONE (Login & Register)
+      // 1. HALAMAN STANDALONE (Login & Register - Tanpa Navbar/Footer)
       // ====================================================
       { path: '/login', element: <LoginPage /> },
       { path: '/register', element: <RegisterPage /> },
 
       // ====================================================
-      // 2. HALAMAN PUBLIK (Dengan Layout/Navbar/Footer)
+      // 2. HALAMAN PUBLIK (Dibungkus Layout: Navbar + Content + Footer)
       // ====================================================
       {
-        element: <Layout />, // Membungkus rute publik dengan Navbar/Footer
+        element: <Layout />, // Layout ini SEKARANG menggunakan <Outlet />
         children: [
           { path: '/', element: <HomePage /> },
           { path: '/acara/:slug', element: <AcaraDetailPage /> },
@@ -55,16 +55,14 @@ const router = createBrowserRouter([
       // 3. HALAMAN ADMIN (Protected dengan Layout Admin)
       // ====================================================
       {
-        path: '/admin', // Prefix path
-        // ProtectedRoute ini memastikan user adalah Admin sebelum render AdminLayout
+        path: '/admin',
         element: <ProtectedRoute allowedRoles={['Admin']} />, 
         children: [
           {
-            element: <AdminLayout />, // Layout Admin dengan Sidebar
+            element: <AdminLayout />, // Pastikan AdminLayout juga menggunakan <Outlet /> di dalamnya
             children: [
               { path: 'dashboard', element: <AdminDashboardPage /> },
               { path: 'kategori', element: <AdminKategoriPage /> },
-              // >> DAFTARKAN RUTE VALIDASI DI SINI:
               { path: 'validasi-penyelenggara', element: <AdminValidasiPenyelenggaraPage /> },
               { path: 'validasi-acara', element: <AdminValidasiAcaraPage /> },
             ]
@@ -73,7 +71,7 @@ const router = createBrowserRouter([
       },
       
       // Fallback untuk 404 (Opsional)
-      { path: '*', element: <div>404 Not Found</div> }
+      { path: '*', element: <div className="text-center mt-20 font-bold">404 Not Found</div> }
     ]
   }
 ]);

@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import publicApi from "../api/publicApi"; 
-import Navbar from "../components/Common/Navbar";
-import Footer from "../components/Common/Footer";
 
-// URL Backend untuk gambar (sesuaikan port jika beda)
+// URL Backend untuk gambar
 const STORAGE_URL = "http://localhost:8000/storage/";
 
 export default function HomePage() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [filterType, setFilterType] = useState("Event Type");
+  
+  // State untuk Filter
+  const [filterType, setFilterType] = useState("Tipe Acara");
+  const [filterDay, setFilterDay] = useState("Hari"); // State baru untuk filter hari
 
   useEffect(() => {
     fetchEvents();
@@ -20,14 +21,12 @@ export default function HomePage() {
   const fetchEvents = async () => {
     try {
       setLoading(true);
-      // Safety check jika publicApi belum siap
       if (!publicApi || typeof publicApi.getAcara !== 'function') {
          console.warn("API belum siap atau import salah");
          setEvents([]);
          return;
       }
       const response = await publicApi.getAcara();
-      // Safety check: pastikan data ada sebelum di-set
       const data = response?.data?.data || response?.data || [];
       setEvents(Array.isArray(data) ? data : []);
     } catch (error) {
@@ -38,7 +37,6 @@ export default function HomePage() {
     }
   };
 
-  // Formatter Tanggal Aman
   const formatDate = (dateString) => {
     try {
         const date = new Date(dateString);
@@ -54,16 +52,13 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-white font-sans text-gray-800 flex flex-col">
-      <Navbar />
-
+    <div className="bg-white font-sans text-gray-800 w-full">
+      
       {/* --- HERO SECTION --- */}
-      {/* Menggunakan inline style untuk memaksa background & height tampil jika Tailwind gagal */}
       <div 
         className="relative w-full overflow-hidden"
         style={{ backgroundColor: '#1a1a2e', height: '500px', minHeight: '500px' }}
       >
-        {/* Background Image */}
         <div className="absolute inset-0 opacity-40">
             <img 
                 src="https://images.unsplash.com/photo-1459749411177-2a296581dca1?q=80&w=1470&auto=format&fit=crop" 
@@ -71,10 +66,9 @@ export default function HomePage() {
                 className="w-full h-full object-cover"
             />
         </div>
-        {/* Gradient Overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-[#0B1221] to-transparent"></div>
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex flex-col justify-center items-start pt-10">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex flex-col justify-center items-center text-center pt-10">
           <h1 className="text-5xl md:text-7xl font-extrabold text-white tracking-tight mb-4 drop-shadow-lg">
             <span className="text-[#FF7F3E]">Unila</span>Fest
           </h1>
@@ -95,7 +89,7 @@ export default function HomePage() {
             </div>
             <input 
                 type="text" 
-                placeholder="Cari event..." 
+                placeholder="Cari acara..." 
                 className="w-full bg-transparent border-none text-white px-4 py-3 focus:ring-0 placeholder-gray-400 text-lg outline-none"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -107,24 +101,38 @@ export default function HomePage() {
       </div>
 
       {/* --- MAIN CONTENT --- */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 flex-grow w-full">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 w-full">
         
         <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
-            <h2 className="text-3xl font-bold text-[#1a1a2e]">Upcoming Events</h2>
+            <h2 className="text-3xl font-bold text-[#1a1a2e]">Acara Mendatang</h2>
             
             <div className="flex gap-3 overflow-x-auto pb-2 md:pb-0 w-full md:w-auto">
-                <select className="bg-[#F3F4F6] border-none text-sm font-medium text-gray-600 rounded-full px-4 py-2 cursor-pointer hover:bg-gray-200 outline-none">
-                    <option>Weekdays</option>
-                    <option>Weekends</option>
+                {/* FILTER HARI (SENIN - MINGGU) */}
+                <select 
+                    className="bg-[#F3F4F6] border-none text-sm font-medium text-gray-600 rounded-full px-4 py-2 cursor-pointer hover:bg-gray-200 outline-none"
+                    value={filterDay}
+                    onChange={(e) => setFilterDay(e.target.value)}
+                >
+                    <option>Hari</option>
+                    <option value="Senin">Senin</option>
+                    <option value="Selasa">Selasa</option>
+                    <option value="Rabu">Rabu</option>
+                    <option value="Kamis">Kamis</option>
+                    <option value="Jumat">Jumat</option>
+                    <option value="Sabtu">Sabtu</option>
+                    <option value="Minggu">Minggu</option>
                 </select>
+
+                {/* FILTER KATEGORI (DITAMBAH PENYELENGGARA) */}
                 <select 
                     className="bg-[#F3F4F6] border-none text-sm font-medium text-gray-600 rounded-full px-4 py-2 cursor-pointer hover:bg-gray-200 outline-none"
                     value={filterType}
                     onChange={(e) => setFilterType(e.target.value)}
                 >
-                    <option>Event Type</option>
-                    <option>Seminar</option>
-                    <option>Lomba</option>
+                    <option>Tipe Acara</option>
+                    <option value="Seminar">Seminar</option>
+                    <option value="Lomba">Lomba</option>
+                    <option value="Penyelenggara">Penyelenggara</option>
                 </select>
             </div>
         </div>
@@ -145,10 +153,10 @@ export default function HomePage() {
                             <Link to={`/acara/${event.id}`} key={event.id} className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 flex flex-col h-full">
                                 <div className="relative h-48 overflow-hidden bg-gray-200">
                                     <img 
-                                        src={imageUrl} 
-                                        alt={event.nama_acara} 
-                                        className="w-full h-full object-cover transform group-hover:scale-105 transition duration-500"
-                                        onError={(e) => {e.target.src = 'https://via.placeholder.com/400x200?text=Image+Error'}}
+                                            src={imageUrl} 
+                                            alt={event.nama_acara} 
+                                            className="w-full h-full object-cover transform group-hover:scale-105 transition duration-500"
+                                            onError={(e) => {e.target.src = 'https://via.placeholder.com/400x200?text=Image+Error'}}
                                     />
                                     <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-[#0B1221] shadow-sm">
                                         {event.kategori?.nama_kategori || 'Event'}
@@ -189,13 +197,11 @@ export default function HomePage() {
         {!loading && events.length > 0 && (
             <div className="flex justify-center mt-16">
                 <button className="px-8 py-3 rounded-full border border-[#4F46E5] text-[#4F46E5] font-semibold hover:bg-[#4F46E5] hover:text-white transition duration-300">
-                    Load More
+                    Muat Lebih Banyak
                 </button>
             </div>
         )}
       </div>
-      
-      <Footer />
     </div>
   );
 }

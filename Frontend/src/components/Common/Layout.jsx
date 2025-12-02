@@ -2,26 +2,25 @@
 // (PJ 1 - GATEKEEPER) - Layout Utama untuk Halaman Publik
 
 import React from 'react';
-import Navbar from './Navbar'; // Pastikan case-nya: ./Navbar
-import Footer from './Footer'; // Pastikan case-nya: ./Footer
-// Tidak perlu import Outlet jika Anda menggunakan 'children'
-// import { Outlet } from 'react-router-dom'; 
+import Navbar from './Navbar'; 
+import Footer from './Footer'; 
+import { Outlet } from 'react-router-dom'; // WAJIB: Import Outlet
 
-const Layout = ({ children }) => {
+const Layout = () => {
   return (
-    // KRUSIAL: flex-col dan min-h-screen di root div
+    // Menggunakan flex-col dan min-h-screen agar footer selalu di bawah
     <div className="flex flex-col min-h-screen bg-bgbody text-textmain">
       
-      {/* 1. Navbar (sticky agar tetap di atas) */}
+      {/* 1. Navbar (Sticky) */}
       <header className="sticky top-0 z-30">
         <Navbar />
       </header>
 
-      {/* 2. Konten Utama */}
-      {/* KRUSIAL: flex-1 memastikan bagian ini mengambil semua ruang sisa, 
-         mendorong Footer ke bawah */}
-      <main className="flex-1">
-        {children} 
+      {/* 2. Konten Utama (Render Halaman Anak di sini) */}
+      {/* flex-1 akan mengisi ruang kosong yang tersisa */}
+      <main className="flex-1 w-full">
+        {/* <Outlet /> adalah tempat di mana HomePage, AcaraDetailPage, dll akan muncul */}
+        <Outlet />
       </main>
 
       {/* 3. Footer */}
