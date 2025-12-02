@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import Button from './button';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -9,51 +8,50 @@ export default function Navbar() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  // --- HANDLER PENCARIAN ---
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      // Redirect ke halaman home dengan parameter pencarian
       navigate(`/?q=${encodeURIComponent(searchQuery)}`);
     }
   };
 
-  // --- LOGIKA HAK AKSES ---
-  // 1. Cek apakah Admin
-  const isAdmin = user?.peran === 'admin' || user?.peran === 'Admin';
+  const getInitials = (name) => {
+    if (!name) return 'U';
+    return name.charAt(0).toUpperCase() + (name.split(' ')[1]?.charAt(0).toUpperCase() || '');
+  };
 
-  // 2. Cek apakah User adalah Penyelenggara yang Disetujui (Approved)
-  // Kita cek array relasi 'penyelenggara_yang_dikelola' yang dikirim AuthController
-  // Menggunakan optional chaining (?.) untuk keamanan jika data null
-  const penyelenggara = user?.penyelenggara_yang_dikelola?.[0]; // Ambil data pertama
+  const isAdmin = user?.peran === 'admin' || user?.peran === 'Admin';
+  // Cek apakah user sudah punya data penyelenggara
+  const penyelenggara = user?.penyelenggara_yang_dikelola?.[0];
+  // Cek apakah statusnya sudah disetujui
   const isApprovedOrganizer = penyelenggara?.pivot?.status_tautan === 'Approved';
+  // Cek apakah user adalah penyelenggara (pending atau approved)
+  const isOrganizer = !!penyelenggara;
 
   return (
-    <nav className="bg-secondary border-b border-gray-800 sticky top-0 z-50 shadow-lg">
+    <nav className="bg-[#0B1221] border-b border-gray-800 sticky top-0 z-50 font-sans">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-20 items-center">
           
-          {/* A. LOGO SECTION */}
+          {/* LOGO */}
           <div className="flex-shrink-0 flex items-center cursor-pointer" onClick={() => navigate('/')}>
-            <Link to="/" className="text-3xl font-extrabold tracking-tight flex items-center gap-2">
-               <div>
-                 <span className="text-primary">Unila</span>
-                 <span className="text-white">Fest</span>
-               </div>
+            <Link to="/" className="text-2xl font-bold tracking-tight flex items-center">
+               <span className="text-[#FF7F3E]">Unila</span>
+               <span className="text-white">Fest</span>
             </Link>
           </div>
 
-          {/* B. SEARCH BAR (Desktop) */}
-          <div className="hidden md:flex flex-1 max-w-md mx-8">
-            <form onSubmit={handleSearch} className="w-full relative group">
+          {/* SEARCH BAR (Desktop) */}
+          <div className="hidden md:flex flex-1 max-w-lg mx-12">
+            <form onSubmit={handleSearch} className="w-full relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg className="h-5 w-5 text-gray-400 group-focus-within:text-primary transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </div>
               <input
                 type="text"
-                className="block w-full pl-10 pr-3 py-2 border border-gray-700 rounded-full leading-5 bg-gray-800 text-gray-300 placeholder-gray-500 focus:outline-none focus:bg-gray-900 focus:border-primary focus:ring-1 focus:ring-primary sm:text-sm transition-all duration-300"
+                className="block w-full pl-10 pr-3 py-2.5 border border-gray-700 rounded-full leading-5 bg-[#1F2937] text-gray-300 placeholder-gray-500 focus:outline-none focus:bg-[#374151] focus:border-[#FF7F3E] focus:ring-1 focus:ring-[#FF7F3E] sm:text-sm transition-all"
                 placeholder="Cari event seminar, lomba..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -61,91 +59,61 @@ export default function Navbar() {
             </form>
           </div>
 
-          {/* C. DESKTOP MENU */}
-          <div className="hidden md:flex items-center space-x-6">
-            
-            {/* Menu Global: Semua User bisa lihat */}
-            <Link to="/" className="text-gray-300 hover:text-primary font-medium text-sm transition-colors">
+          {/* RIGHT MENU */}
+          <div className="hidden md:flex items-center space-x-8">
+            <Link to="/" className="text-gray-300 hover:text-white font-medium text-sm">
               Event
             </Link>
 
-            {/* Logika User Login */}
+            {/* Tampilkan tombol "Jadi Penyelenggara" jika user BELUM jadi penyelenggara (baik user login maupun tamu) */}
+            {!isOrganizer && (
+                 <Link to="/ajukan-penyelenggara" className="text-gray-300 hover:text-white font-medium text-sm">
+                    Daftar Penyelenggara
+                 </Link>
+            )}
+
             {user ? (
-              <>
-                {/* --- MENU ADMIN --- */}
-                {isAdmin && (
-                  <Link to="/admin/dashboard" className="text-primary font-semibold text-sm hover:text-orange-400 transition-colors">
-                    Dashboard Admin
-                  </Link>
-                )}
-
-                {/* --- MENU USER / PENYELENGGARA --- */}
-                {!isAdmin && (
-                  <>
-                    {isApprovedOrganizer ? (
-                      // 1. Jika Status Approved -> Tampilkan Menu Manajemen Event
-                      <>
-                        <Link to="/agenda-saya" className="text-gray-300 hover:text-primary font-medium text-sm transition-colors">
-                          Event Saya
-                        </Link>
-                        <Link to="/ajukan-acara">
-                          <Button variant="outline" className="py-1.5 px-4 text-xs border-primary text-primary hover:bg-primary hover:text-white rounded-full">
-                            + Tambah Event
-                          </Button>
-                        </Link>
-                      </>
-                    ) : (
-                      // 2. Jika Belum Approved / Belum Daftar -> Tampilkan Menu Daftar
-                      <Link to="/ajukan-penyelenggara" className="text-gray-300 hover:text-primary font-medium text-sm transition-colors">
-                        Daftar Penyelenggara
-                      </Link>
-                    )}
-                  </>
-                )}
-
-                {/* User Profile & Logout */}
-                <div className="flex items-center gap-4 pl-6 border-l border-gray-700 ml-2">
-                  <div className="flex flex-col items-end hidden lg:flex">
-                    <span className="text-white text-sm font-semibold leading-none">
-                      {user.nama?.split(' ')[0]}
-                    </span>
-                    <span className="text-xs text-gray-500 mt-1">
-                      {isAdmin ? 'Administrator' : isApprovedOrganizer ? 'Mitra Event' : 'User'}
-                    </span>
-                  </div>
-                  
-                  <button 
-                    onClick={logout} 
-                    className="p-2 text-gray-400 hover:text-red-500 bg-gray-800 hover:bg-gray-700 rounded-full transition-all duration-300" 
-                    title="Keluar"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
-                  </button>
+              <div className="flex items-center gap-3 pl-4 border-l border-gray-700">
+                <div className="flex flex-col items-end">
+                  <span className="text-white text-sm font-bold leading-none">
+                    {user.nama?.split(' ')[0]}
+                  </span>
+                  <span className="text-[10px] text-gray-400 uppercase tracking-wider mt-1">
+                    {isAdmin ? 'ADMIN' : 'USER'}
+                  </span>
                 </div>
-              </>
+                
+                <div className="relative group">
+                    <div className="h-10 w-10 rounded-full bg-[#FF7F3E] flex items-center justify-center text-white font-bold cursor-pointer hover:bg-orange-600 transition">
+                        {getInitials(user.nama)}
+                    </div>
+                    {/* Dropdown Logout */}
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top-right z-50">
+                        {isAdmin && (
+                            <Link to="/admin/dashboard" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Dashboard Admin</Link>
+                        )}
+                        {isApprovedOrganizer && (
+                             <Link to="/agenda-saya" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Dashboard Penyelenggara</Link>
+                        )}
+                        <button onClick={logout} className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100">
+                            Logout
+                        </button>
+                    </div>
+                </div>
+              </div>
             ) : (
-              // Logika Tamu (Guest)
-              <div className="flex items-center space-x-4">
-                <Link to="/login" className="text-gray-300 hover:text-white font-medium text-sm transition-colors">
-                  Masuk
-                </Link>
-                <Link to="/register">
-                  <Button className="py-2 px-6 text-sm shadow-lg shadow-orange-500/20 hover:shadow-orange-500/40 transition-all">
+              <div className="flex items-center gap-4">
+                 <Link to="/login" className="text-white font-medium text-sm hover:text-[#FF7F3E]">Masuk</Link>
+                 <Link to="/register" className="bg-[#FF7F3E] hover:bg-orange-600 text-white px-5 py-2 rounded-full text-sm font-medium transition">
                     Daftar
-                  </Button>
-                </Link>
+                 </Link>
               </div>
             )}
           </div>
 
-          {/* D. MOBILE MENU BUTTON */}
+          {/* MOBILE MENU BUTTON */}
           <div className="md:hidden flex items-center">
-            <button 
-              onClick={() => setIsMenuOpen(!isMenuOpen)} 
-              className="text-gray-300 hover:text-white p-2 rounded-md focus:outline-none"
-            >
+            <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-gray-300 hover:text-white p-2">
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 {isMenuOpen ? (
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -157,85 +125,22 @@ export default function Navbar() {
           </div>
         </div>
       </div>
-
-      {/* E. MOBILE MENU DROPDOWN */}
+      
+      {/* Mobile Menu */}
       {isMenuOpen && (
-        <div className="md:hidden bg-gray-900 border-b border-gray-800 animate-fade-in-down">
-          {/* Mobile Search */}
-          <div className="px-4 pt-4 pb-2">
-            <form onSubmit={handleSearch} className="relative">
-               <input
-                type="text"
-                className="w-full bg-gray-800 text-white border border-gray-700 rounded-lg py-2 pl-3 pr-10 focus:border-primary focus:ring-1 focus:ring-primary placeholder-gray-500"
-                placeholder="Cari event..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              <button type="submit" className="absolute right-2 top-2 text-gray-400">
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </button>
-            </form>
-          </div>
-          
-          <div className="px-2 pt-2 pb-3 space-y-1">
-            <Link to="/" className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-gray-800">
-              Event
-            </Link>
-
-            {user ? (
-              <>
-                {isAdmin ? (
-                  <Link to="/admin/dashboard" className="block px-3 py-2 rounded-md text-base font-medium text-primary hover:bg-gray-800">
-                    Dashboard Admin
-                  </Link>
-                ) : (
-                   isApprovedOrganizer ? (
-                    <>
-                      <Link to="/agenda-saya" className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-gray-800">
-                        Event Saya
-                      </Link>
-                      <Link to="/ajukan-acara" className="block px-3 py-2 rounded-md text-base font-medium text-primary hover:bg-gray-800">
-                        + Tambah Event
-                      </Link>
-                    </>
-                   ) : (
-                    <Link to="/ajukan-penyelenggara" className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-gray-800">
-                      Daftar Penyelenggara
-                    </Link>
-                   )
-                )}
-                
-                <div className="border-t border-gray-800 mt-4 pt-4 px-3">
-                  <div className="flex items-center mb-3">
-                    <div className="ml-0">
-                      <div className="text-base font-medium leading-none text-white">{user.nama}</div>
-                      <div className="text-xs font-medium leading-none text-gray-500 mt-1">{user.email}</div>
-                    </div>
-                  </div>
-                  <button 
-                    onClick={() => {
-                        logout();
-                        setIsMenuOpen(false);
-                    }}
-                    className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-500 hover:bg-gray-800"
-                  >
-                    Keluar
-                  </button>
-                </div>
-              </>
-            ) : (
-              <div className="border-t border-gray-800 mt-4 pt-4 flex flex-col gap-2 px-3">
-                <Link to="/login" className="block w-full text-center px-4 py-2 border border-gray-600 rounded-md text-gray-300 font-medium hover:bg-gray-800">
-                  Masuk
-                </Link>
-                <Link to="/register" className="block w-full text-center px-4 py-2 bg-primary rounded-md text-white font-medium hover:bg-orange-600">
-                  Daftar
-                </Link>
-              </div>
+        <div className="md:hidden bg-[#0B1221] border-b border-gray-800 px-4 pt-2 pb-4">
+            <Link to="/" className="block py-2 text-gray-300">Event</Link>
+            {!isOrganizer && (
+                <Link to="/ajukan-penyelenggara" className="block py-2 text-gray-300">Jadi Penyelenggara</Link>
             )}
-          </div>
+            {!user ? (
+                <>
+                    <Link to="/login" className="block py-2 text-gray-300">Masuk</Link>
+                    <Link to="/register" className="block py-2 text-[#FF7F3E]">Daftar</Link>
+                </>
+            ) : (
+                <button onClick={logout} className="block py-2 text-red-500">Logout</button>
+            )}
         </div>
       )}
     </nav>
