@@ -75,6 +75,21 @@ class AcaraSubmissionController extends Controller
             ], 403);
         }
 
+        $penyelenggara = DB::table('penyelenggara')->where('id', $pengelola->id_penyelenggara)->first();
+
+        // --- LOGIC TAMBAHAN: Validasi Lokasi Berdasarkan Tipe Penyelenggara ---
+        if ($penyelenggara->tipe === 'Eksternal') {
+            // Cek apakah string lokasi mengandung kata 'Unila', 'Universitas Lampung', atau gedung fakultas
+            // Ini validasi sederhana, bisa diperketat dengan Regex atau Dropdown di frontend
+            $lokasiValid = Str::contains(strtolower($validated['lokasi']), ['unila', 'universitas lampung', 'gedung', 'fakultas']);
+            
+            if (!$lokasiValid) {
+                return response()->json([
+                    'message' => 'Penyelenggara Eksternal WAJIB mengadakan acara di dalam lingkungan Unila.'
+                ], 422);
+            }
+        }
+
         // 3. Handle Upload Poster
         $posterPath = null;
         if ($request->hasFile('poster')) {

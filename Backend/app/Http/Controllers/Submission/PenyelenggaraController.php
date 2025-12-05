@@ -21,6 +21,7 @@ class PenyelenggaraController extends Controller
             'tipe' => 'required|in:Internal,Eksternal',
             'deskripsi_singkat' => 'nullable|string',
             'logo' => 'required|image|mimes:jpeg,png,jpg|max:2048', // Max 2MB
+            'dokumen_validasi' => 'required|file|mimes:pdf,doc,docx,jpeg,png,jpg|max:5120', // Max 5MB
         ]);
 
         if ($validator->fails()) {
@@ -35,7 +36,7 @@ class PenyelenggaraController extends Controller
             // 2. Cek apakah user sudah pernah mengajukan penyelenggara yang pending
             $existingPending = $request->user()
                 ->penyelenggaraYangDikelola()
-                ->wherePivot('status_tautan', 'pending')
+                ->wherePivot('status_tautan', 'Pending')
                 ->exists();
             
             if ($existingPending) {
@@ -53,17 +54,26 @@ class PenyelenggaraController extends Controller
                 $logoUrl = asset('storage/' . $logoPath);
             }
 
+            // Upload Dokumen Validasi (Bukti Organisasi)
+            $dokumenValidasiUrl = null;
+            if ($request->hasFile('dokumen_validasi')) {
+                // Simpan di folder: storage/app/public/dokumen_validasi
+                $dokumenPath = $request->file('dokumen_validasi')->store('dokumen_validasi', 'public');
+                $dokumenValidasiUrl = asset('storage/' . $dokumenPath);
+            }
+
             // 4. Simpan ke tabel penyelenggara
             $penyelenggara = Penyelenggara::create([
                 'nama_penyelenggara' => $request->nama_penyelenggara,
                 'tipe' => $request->tipe,
                 'deskripsi_singkat' => $request->deskripsi_singkat,
                 'logo_url' => $logoUrl,
+                'dokumen_validasi_url' => $dokumenValidasiUrl,
             ]);
             
             // 5. Hubungkan user dengan penyelenggara melalui tabel pivot (pengelola_penyelenggara)
             $request->user()->penyelenggaraYangDikelola()->attach($penyelenggara->id, [
-                'status_tautan' => 'pending',
+                'status_tautan' => 'Pending',
                 'catatan_admin' => null,
             ]);
 

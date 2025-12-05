@@ -11,6 +11,7 @@ export default function FormAjuanPenyelenggara() {
     deskripsi_singkat: "",
   });
   const [logoFile, setLogoFile] = useState(null);
+  const [buktiFile, setBuktiFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
 
@@ -24,11 +25,21 @@ export default function FormAjuanPenyelenggara() {
     setLogoFile(e.target.files[0]);
   };
 
+  // Handle bukti file input
+  const handleBuktiFileChange = (e) => {
+    setBuktiFile(e.target.files[0]);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!logoFile) {
       alert("Mohon upload logo organisasi Anda.");
+      return;
+    }
+
+    if (!buktiFile) {
+      alert("Mohon upload bukti organisasi Anda.");
       return;
     }
 
@@ -41,16 +52,27 @@ export default function FormAjuanPenyelenggara() {
     formData.append("tipe", form.tipe);
     formData.append("deskripsi_singkat", form.deskripsi_singkat);
     formData.append("logo", logoFile);
+    formData.append("dokumen_validasi", buktiFile);
 
     try {
       await submissionApi.submitPenyelenggara(formData);
       setMessage({ type: "success", text: "Pengajuan Berhasil! Mohon tunggu validasi admin." });
       setForm({ nama_penyelenggara: "", tipe: "Internal", deskripsi_singkat: "" }); // Reset
       setLogoFile(null);
+      setBuktiFile(null);
     } catch (error) {
       console.error("Gagal submit:", error);
-      const errorMsg = error.response?.data?.message || "Terjadi kesalahan saat mengirim data.";
-      setMessage({ type: "error", text: errorMsg });
+      console.error("Error response:", error.response);
+      
+      // Tangani error validasi
+      if (error.response?.data?.errors) {
+        const errors = error.response.data.errors;
+        const errorMessages = Object.values(errors).flat().join(', ');
+        setMessage({ type: "error", text: `Validasi gagal: ${errorMessages}` });
+      } else {
+        const errorMsg = error.response?.data?.message || "Terjadi kesalahan saat mengirim data.";
+        setMessage({ type: "error", text: errorMsg });
+      }
     } finally {
       setLoading(false);
     }
@@ -115,6 +137,18 @@ export default function FormAjuanPenyelenggara() {
             required
           />
           <p className="text-xs text-gray-500 mt-1">Format: JPG, PNG (Max. 2MB)</p>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Bukti Organisasi</label>
+          <input
+            type="file"
+            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+            onChange={handleBuktiFileChange}
+            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"
+            required
+          />
+          <p className="text-xs text-gray-500 mt-1">Upload surat keputusan, sertifikat, atau dokumen resmi organisasi (PDF, DOC, JPG - Max. 5MB)</p>
         </div>
 
         <div className="pt-2">

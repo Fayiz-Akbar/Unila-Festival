@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Support\Facades\DB; // <-- PENTING: Import DB untuk pengecekan status
 
 class User extends Authenticatable
 {
@@ -15,7 +16,7 @@ class User extends Authenticatable
     /**
      * Menunjuk ke tabel 'pengguna' di database.
      */
-    protected $table = 'pengguna'; // Sesuaikan jika nama tabelnya 'users' atau 'pengguna'
+    protected $table = 'pengguna';
 
     /**
      * The attributes that are mass assignable.
@@ -55,14 +56,38 @@ class User extends Authenticatable
     }
 
     /**
-     * Memberitahu Laravel untuk menggunakan 'kata_sandi' saat autentikasi.
+     * Memberitahu Laravel untuk menggunakan kolom 'kata_sandi' sebagai password saat autentikasi.
      */
     public function getAuthPassword()
     {
         return $this->kata_sandi;
     }
 
-    // --- DEFINISI RELASI ---
+    // =========================================================
+    // === LOGIC GATEKEEPER (PENTING UNTUK FRONTEND NAVBAR) ===
+    // =========================================================
+
+    /**
+     * Menambahkan atribut 'is_penyelenggara' ke dalam response JSON user.
+     */
+    protected $appends = ['is_penyelenggara'];
+
+    /**
+     * Accessor: Mengecek apakah user ini terdaftar sebagai pengelola yang APPROVED.
+     * Frontend akan menggunakan user.is_penyelenggara (true/false) untuk menampilkan menu.
+     */
+    public function getIsPenyelenggaraAttribute()
+    {
+        // Menggunakan DB Facade agar lebih ringan/cepat saat login
+        return DB::table('pengelola_penyelenggara')
+            ->where('id_pengguna', $this->id)
+            ->where('status_tautan', 'Approved') // Hanya status Approved yang dianggap valid
+            ->exists();
+    }
+
+    // =========================================================
+    // === DEFINISI RELASI ===
+    // =========================================================
 
     /**
      * Relasi 1-ke-Banyak: Satu Pengguna bisa mengajukan banyak Acara.
