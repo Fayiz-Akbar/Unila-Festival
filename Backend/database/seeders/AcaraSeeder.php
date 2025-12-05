@@ -13,25 +13,28 @@ class AcaraSeeder extends Seeder
     public function run(): void
     {
         // ============================================================
-        // 1. USER PENGAJU (Tabel: pengguna)
+        // 1. USER PENYELENGGARA KHUSUS (Admin BEM)
         // ============================================================
-        // Pastikan user ada untuk 'id_pengaju'
-        $userEmail = 'bem@unila.ac.id';
-        $user = DB::table('pengguna')->where('email', $userEmail)->first();
+        // Menggunakan updateOrInsert agar aman dijalankan berulang kali
+        $targetEmailPenyelenggara = 'bem@unila.ac.id'; 
         
-        if (!$user) {
-            $userId = DB::table('pengguna')->insertGetId([
+        // Pastikan user BEM ada dengan password 'password123'
+        $userPenyelenggaraId = DB::table('pengguna')->updateOrInsert(
+            ['email' => $targetEmailPenyelenggara], // Kunci pencarian
+            [
                 'nama' => 'Admin BEM',
-                'email' => $userEmail,
                 'kata_sandi' => Hash::make('password123'),
-                'peran' => 'User',
+                'peran' => 'User', 
                 'email_verified_at' => now(),
                 'created_at' => now(),
                 'updated_at' => now(),
-            ]);
-        } else {
-            $userId = $user->id;
-        }
+            ]
+        );
+
+        // Ambil ID-nya (karena updateOrInsert return boolean di beberapa versi Laravel lama/driver tertentu,
+        // jadi lebih aman kita query ulang ID-nya)
+        $userPenyelenggara = DB::table('pengguna')->where('email', $targetEmailPenyelenggara)->first();
+        $userPenyelenggaraId = $userPenyelenggara->id;
 
         // ============================================================
         // 2. KATEGORI (Tabel: kategori)
@@ -46,55 +49,55 @@ class AcaraSeeder extends Seeder
 
         $kategoriIds = [];
         foreach ($kategoris as $namaKategori) {
-            $existing = DB::table('kategori')->where('nama_kategori', $namaKategori)->first();
-            if ($existing) {
-                $kategoriIds[] = $existing->id;
-            } else {
-                $id = DB::table('kategori')->insertGetId([
-                    'nama_kategori' => $namaKategori,
-                    'slug' => Str::slug($namaKategori),
+            $slug = Str::slug($namaKategori);
+            DB::table('kategori')->updateOrInsert(
+                ['nama_kategori' => $namaKategori],
+                [
+                    'slug' => $slug,
                     'created_at' => now(),
                     'updated_at' => now(),
-                ]);
-                $kategoriIds[] = $id;
-            }
+                ]
+            );
+            $kategoriIds[] = DB::table('kategori')->where('nama_kategori', $namaKategori)->first()->id;
         }
 
         // ============================================================
         // 3. PENYELENGGARA (Tabel: penyelenggara)
         // ============================================================
-        // Kolom: nama_penyelenggara, tipe, deskripsi_singkat, logo_url
         $penyelenggaraNama = 'BEM Unila';
-        $penyelenggara = DB::table('penyelenggara')->where('nama_penyelenggara', $penyelenggaraNama)->first();
-
-        if ($penyelenggara) {
-            $penyelenggaraId = $penyelenggara->id;
-        } else {
-            $penyelenggaraId = DB::table('penyelenggara')->insertGetId([
-                'nama_penyelenggara' => $penyelenggaraNama,
-                'tipe' => 'Internal', // Enum: Internal / Eksternal
+        
+        DB::table('penyelenggara')->updateOrInsert(
+            ['nama_penyelenggara' => $penyelenggaraNama],
+            [
+                'tipe' => 'Internal',
                 'deskripsi_singkat' => 'Badan Eksekutif Mahasiswa Universitas Lampung',
-                'logo_url' => null, // Boleh null jika belum ada gambar
+                'logo_url' => null,
                 'dokumen_validasi_url' => null,
                 'created_at' => now(),
                 'updated_at' => now(),
-            ]);
+            ]
+        );
+        
+        $penyelenggaraId = DB::table('penyelenggara')->where('nama_penyelenggara', $penyelenggaraNama)->first()->id;
 
-            // Link User ke Penyelenggara (Tabel Pivot)
-            DB::table('pengelola_penyelenggara')->insertOrIgnore([
-                'id_pengguna' => $userId,
-                'id_penyelenggara' => $penyelenggaraId,
+        // 4. HUBUNGKAN HANYA USER BEM KE PENYELENGGARA (Pivot)
+        // Gunakan ID user BEM yang spesifik ($userPenyelenggaraId)
+        DB::table('pengelola_penyelenggara')->updateOrInsert(
+            [
+                'id_pengguna' => $userPenyelenggaraId,
+                'id_penyelenggara' => $penyelenggaraId
+            ],
+            [
                 'status_tautan' => 'Approved',
                 'created_at' => now(),
                 'updated_at' => now(),
-            ]);
-        }
+            ]
+        );
 
         // ============================================================
-        // 4. DATA ACARA (Tabel: acara)
+        // 5. DATA ACARA (Tabel: acara)
         // ============================================================
-        // Kolom: judul, slug, deskripsi, poster_url, id_pengaju, id_penyelenggara, id_kategori, lokasi, waktu_mulai, waktu_selesai, link_pendaftaran, status
-        
+        // Data Dummy dengan Gambar Unsplash
         $templateAcara = [
             ['Seminar Nasional AI 2025', 0, 'GSG Unila', 'https://images.unsplash.com/photo-1544531586-fde5298cdd40?w=600&q=80'],
             ['Konser Musik Harmoni', 1, 'Lapangan Rektorat', 'https://images.unsplash.com/photo-1459749411177-2a296581dca1?w=600&q=80'],
@@ -119,29 +122,32 @@ class AcaraSeeder extends Seeder
             $waktuMulai = Carbon::now()->addDays(rand(1, 60));
             $waktuSelesai = (clone $waktuMulai)->addHours(3);
 
-            // Buat slug unik
             $slug = Str::slug($judul);
+            // Cek duplikasi slug
             if (DB::table('acara')->where('slug', $slug)->exists()) {
-                $slug = $slug . '-' . rand(1, 100);
+                $slug = $slug . '-' . rand(1, 1000);
             }
 
-            DB::table('acara')->insert([
-                'judul' => $judul,
-                'slug' => $slug,
-                'deskripsi' => 'Bergabunglah dalam ' . $judul . ' yang akan diselenggarakan di ' . $lokasi . '. Acara ini terbuka untuk umum dan mahasiswa Unila.',
-                'poster_url' => $imgUrl, // Link gambar dari internet
-                'id_pengaju' => $userId,
-                'id_penyelenggara' => $penyelenggaraId,
-                'id_kategori' => $kategoriIds[$katIdx] ?? $kategoriIds[0],
-                'lokasi' => $lokasi,
-                'waktu_mulai' => $waktuMulai,
-                'waktu_selesai' => $waktuSelesai,
-                'link_pendaftaran' => 'https://forms.google.com/example',
-                'status' => 'Published', // Wajib 'Published' agar tampil di Frontend
-                'catatan_admin_acara' => null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+            // Gunakan updateOrInsert berdasarkan judul agar tidak duplikat
+            DB::table('acara')->updateOrInsert(
+                ['judul' => $judul], // Kunci pencarian
+                [
+                    'slug' => $slug,
+                    'deskripsi' => 'Bergabunglah dalam ' . $judul . ' yang akan diselenggarakan di ' . $lokasi . '. Acara ini terbuka untuk umum dan mahasiswa Unila.',
+                    'poster_url' => $imgUrl,
+                    'id_pengaju' => $userPenyelenggaraId, 
+                    'id_penyelenggara' => $penyelenggaraId,
+                    'id_kategori' => $kategoriIds[$katIdx] ?? $kategoriIds[0],
+                    'lokasi' => $lokasi,
+                    'waktu_mulai' => $waktuMulai,
+                    'waktu_selesai' => $waktuSelesai,
+                    'link_pendaftaran' => 'https://forms.google.com/example',
+                    'status' => 'Published',
+                    'catatan_admin_acara' => null,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]
+            );
         }
     }
 }

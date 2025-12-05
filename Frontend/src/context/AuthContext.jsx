@@ -1,69 +1,117 @@
 // Frontend/src/context/AuthContext.jsx
-// (PJ 1 - GATEKEEPER)
-
-import { createContext, useContext, useState } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
 import authApi from '../api/authApi';
+import submissionApi from '../api/submissionApi';
 
-// Buat Context
-const AuthContext = createContext();
+const AuthContext = createContext(null);
 
-// Buat Provider (Pembungkus)
 export const AuthProvider = ({ children }) => {
-  // Cek localStorage apakah sudah ada data dari login sebelumnya
+  // 1. Load data dari LocalStorage saat awal (agar tidak hilang saat refresh)
   const [user, setUser] = useState(() => 
     JSON.parse(localStorage.getItem('AUTH_USER')) || null
   );
+  // State untuk menyimpan token (opsional di state, tapi wajib di localStorage)
   const [token, setToken] = useState(() => 
     localStorage.getItem('AUTH_TOKEN') || null
   );
+  
+  const [isPenyelenggara, setIsPenyelenggara] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const setAuthData = (data, authToken) => {
-    // 1. Set state di React
-    setUser(data);
-    setToken(authToken);
-
-    // 2. Simpan ke localStorage
-    localStorage.setItem('AUTH_USER', JSON.stringify(data));
-    localStorage.setItem('AUTH_TOKEN', authToken);
-  };
-
-  const clearAuthData = () => {
-    // 1. Hapus state di React
-    setUser(null);
-    setToken(null);
-
-    // 2. Hapus dari localStorage
-    localStorage.removeItem('AUTH_USER');
-    localStorage.removeItem('AUTH_TOKEN');
-  };
-
-  // Fungsi Login
-  const login = async (email, password) => {
-    const response = await authApi.login(email, password);
-    // Backend mengirim 'access_token', bukan 'token'
-    if (response.data.access_token && response.data.user) {
-      setAuthData(response.data.user, response.data.access_token);
+  // 2. Cek status penyelenggara setiap kali user berubah (login/refresh)
+  useEffect(() => {
+    if (user && token) {
+      checkPenyelenggaraStatus();
     }
-    return response;
+  }, [user, token]);
+
+  // Fungsi Cek ke Backend apakah User ini Penyelenggara Valid
+  const checkPenyelenggaraStatus = async () => {
+    try {
+      // Kita coba request data event milik user
+      const res = await submissionApi.getAcaraMilikUser();
+      const data = res.data.data || res.data;
+      
+      // Jika sukses dan berupa array, berarti dia Penyelenggara
+      if (Array.isArray(data)) {
+        setIsPenyelenggara(true);
+      } else {
+        setIsPenyelenggara(false);
+      }
+    } catch (err) {
+      // Jika error 403/404, berarti bukan penyelenggara
+      setIsPenyelenggara(false);
+    }
   };
 
-  // Fungsi Logout
+  const login = async (email, password) => {
+    try {
+        setLoading(true);
+        const response = await authApi.login(email, password);
+        
+        // PENTING: Backend mengirim 'access_token' & 'user'
+        const { access_token, user: userData } = response.data;
+
+        if (access_token && userData) {
+            // Simpan ke State
+            setToken(access_token);
+            setUser(userData);
+
+            // Simpan ke LocalStorage (Sesuai kode lama Anda)
+            localStorage.setItem('AUTH_TOKEN', access_token);
+            localStorage.setItem('AUTH_USER', JSON.stringify(userData));
+        }
+        
+        return response;
+    } catch (error) {
+        throw error;
+    } finally {
+        setLoading(false);
+    }
+  };
+
+  const register = async (data) => {
+    try {
+        setLoading(true);
+        const response = await authApi.register(data);
+        
+        const { access_token, user: userData } = response.data;
+
+        if (access_token && userData) {
+            setToken(access_token);
+            setUser(userData);
+            
+            localStorage.setItem('AUTH_TOKEN', access_token);
+            localStorage.setItem('AUTH_USER', JSON.stringify(userData));
+        }
+        
+        return response;
+    } catch (error) {
+        throw error;
+    } finally {
+        setLoading(false);
+    }
+  };
+
   const logout = async () => {
     try {
       await authApi.logout();
     } catch (error) {
-      console.error("Error saat logout:", error);
-    } finally {
-      clearAuthData();
+      console.error("Logout error", error);
     }
+    // Hapus semua data sesi
+    localStorage.removeItem('AUTH_TOKEN');
+    localStorage.removeItem('AUTH_USER');
+    setToken(null);
+    setUser(null);
+    setIsPenyelenggara(false);
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, setAuthData, clearAuthData, login, logout }}>
+    <AuthContext.Provider value={{ user, token, isPenyelenggara, login, register, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-// Buat "Custom Hook" agar gampang dipakai
 export const useAuth = () => useContext(AuthContext);
