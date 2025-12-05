@@ -1,11 +1,12 @@
 import React from 'react';
-// import Layout from '../components/Common/Layout'; // <-- HAPUS INI
 import FormAjuanAcara from '../components/Submission/FormAjuanAcara';
 
 const AjukanAcaraPage = () => {
   return (
-    // <Layout> <-- HAPUS PEMBUNGKUS INI
-    <div className="bg-gray-50 min-h-screen py-12">
+    // GANTI DARI 'pt-24' KE 'pt-20' ATAU SESUAI KEBUTUHAN
+    // pt-20 = 5rem = 80px. Navbar h-16 = 4rem = 64px.
+    // Jadi ada sisa 16px jarak aman.
+    <div className="bg-gray-50 min-h-screen py-12 pt-20">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         
         <div className="max-w-3xl mx-auto">
@@ -25,7 +26,6 @@ const AjukanAcaraPage = () => {
 
       </div>
     </div>
-    // </Layout> <-- DAN TUTUPNYA JUGA
   );
 };
 

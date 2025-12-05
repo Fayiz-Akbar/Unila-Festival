@@ -11,9 +11,13 @@ export default function EventPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("Semua Kategori");
+  const [filterMonth, setFilterMonth] = useState("Bulan"); // State untuk Filter Bulan
 
-  // State untuk Kategori (Opsional: Ambil dari API agar dinamis)
-  // const [categories, setCategories] = useState([]);
+  // Daftar Bulan untuk Dropdown
+  const months = [
+    "Januari", "Februari", "Maret", "April", "Mei", "Juni", 
+    "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+  ];
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -45,14 +49,26 @@ export default function EventPage() {
 
   // Filter Logic
   const filteredEvents = events.filter((event) => {
+    // 1. Filter Search (Judul)
     const matchSearch = event.judul.toLowerCase().includes(search.toLowerCase());
+    
+    // 2. Filter Tipe (Kategori)
     const matchType = filterType === "Semua Kategori" || (event.kategori && event.kategori.nama_kategori === filterType);
-    return matchSearch && matchType;
+
+    // 3. Filter Bulan (Baru)
+    let matchMonth = true;
+    if (filterMonth !== "Bulan") {
+        const eventDate = new Date(event.waktu_mulai);
+        const eventMonthName = eventDate.toLocaleString('id-ID', { month: 'long' });
+        matchMonth = eventMonthName === filterMonth;
+    }
+
+    return matchSearch && matchType && matchMonth;
   });
 
   return (
-    // PERBAIKAN DI SINI: Tambahkan 'pt-24' (padding top) agar tidak tertutup Navbar
-    <div className="bg-gray-50 min-h-screen py-10 pt-24"> 
+    // pt-24 agar tidak tertutup Navbar fixed
+    <div className="bg-gray-50 min-h-screen py-10 pt-24 font-sans"> 
       <div className="container mx-auto px-4">
         
         {/* Header & Search */}
@@ -68,28 +84,56 @@ export default function EventPage() {
             </div>
             
             <div className="flex flex-col md:flex-row gap-4">
+                {/* Input Search */}
                 <div className="flex-grow relative">
                     <svg className="w-5 h-5 absolute left-3 top-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                     <input 
                         type="text" 
                         placeholder="Cari nama event..." 
-                        className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#FF7F3E] focus:border-transparent outline-none transition"
+                        className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#FF7F3E] focus:border-transparent outline-none transition text-gray-700"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                     />
                 </div>
-                <select 
-                    className="px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#FF7F3E] outline-none bg-white min-w-[200px] cursor-pointer"
-                    value={filterType}
-                    onChange={(e) => setFilterType(e.target.value)}
-                >
-                    <option>Semua Kategori</option>
-                    <option value="Seminar & Talkshow">Seminar</option>
-                    <option value="Lomba & Kompetisi">Lomba</option>
-                    <option value="Konser Musik">Konser</option>
-                    <option value="Workshop & Pelatihan">Workshop</option>
-                    <option value="Pameran & Expo">Pameran</option>
-                </select>
+                
+                {/* Dropdown Filter Bulan */}
+                <div className="relative min-w-[150px]">
+                    <select 
+                        className="w-full appearance-none px-4 py-3 pr-8 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#FF7F3E] outline-none bg-white cursor-pointer text-gray-700"
+                        value={filterMonth}
+                        onChange={(e) => setFilterMonth(e.target.value)}
+                    >
+                        <option value="Bulan">Semua Bulan</option>
+                        {months.map((m) => (
+                            <option key={m} value={m}>{m}</option>
+                        ))}
+                    </select>
+                    {/* Ikon Panah Bawah (Chevron Down) */}
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+                    </div>
+                </div>
+
+                {/* Dropdown Filter Kategori */}
+                <div className="relative min-w-[200px]">
+                    <select 
+                        className="w-full appearance-none px-4 py-3 pr-8 rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#FF7F3E] outline-none bg-white cursor-pointer text-gray-700"
+                        value={filterType}
+                        onChange={(e) => setFilterType(e.target.value)}
+                    >
+                        <option value="Semua Kategori">Semua Kategori</option>
+                        <option value="Seminar & Talkshow">Seminar</option>
+                        <option value="Lomba & Kompetisi">Lomba</option>
+                        <option value="Konser Musik">Konser</option>
+                        <option value="Workshop & Pelatihan">Workshop</option>
+                        <option value="Pameran & Expo">Pameran</option>
+                    </select>
+                    {/* Ikon Panah Bawah (Chevron Down) */}
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+                    </div>
+                </div>
+
             </div>
         </div>
 
@@ -152,8 +196,8 @@ export default function EventPage() {
                         <div className="bg-white p-8 rounded-2xl border-2 border-dashed border-gray-200 inline-block max-w-md">
                              <svg className="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                              <h3 className="text-lg font-bold text-gray-900">Tidak ada acara ditemukan</h3>
-                             <p className="text-gray-500 mt-2">Coba gunakan kata kunci lain atau ubah filter kategori.</p>
-                             <button onClick={() => {setSearch(''); setFilterType('Semua Kategori')}} className="mt-4 text-[#FF7F3E] font-semibold hover:underline">
+                             <p className="text-gray-500 mt-2">Coba gunakan kata kunci lain atau ubah filter bulan/kategori.</p>
+                             <button onClick={() => {setSearch(''); setFilterType('Semua Kategori'); setFilterMonth('Bulan')}} className="mt-4 text-[#FF7F3E] font-semibold hover:underline">
                                 Reset Filter
                              </button>
                         </div>
