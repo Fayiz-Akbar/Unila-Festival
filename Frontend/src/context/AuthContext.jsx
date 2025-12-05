@@ -21,28 +21,16 @@ export const AuthProvider = ({ children }) => {
   // 2. Cek status penyelenggara setiap kali user berubah (login/refresh)
   useEffect(() => {
     if (user && token) {
-      checkPenyelenggaraStatus();
-    }
-  }, [user, token]);
-
-  // Fungsi Cek ke Backend apakah User ini Penyelenggara Valid
-  const checkPenyelenggaraStatus = async () => {
-    try {
-      // Kita coba request data event milik user
-      const res = await submissionApi.getAcaraMilikUser();
-      const data = res.data.data || res.data;
-      
-      // Jika sukses dan berupa array, berarti dia Penyelenggara
-      if (Array.isArray(data)) {
+      // User model sudah punya accessor 'is_penyelenggara' yang cek status Approved
+      if (user.is_penyelenggara === true) {
         setIsPenyelenggara(true);
       } else {
         setIsPenyelenggara(false);
       }
-    } catch (err) {
-      // Jika error 403/404, berarti bukan penyelenggara
+    } else {
       setIsPenyelenggara(false);
     }
-  };
+  }, [user, token]);
 
   const login = async (email, password) => {
     try {
