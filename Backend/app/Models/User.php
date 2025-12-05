@@ -28,6 +28,7 @@ class User extends Authenticatable
         'email',
         'kata_sandi',
         'peran',
+        'foto_profile_url',
         'email_verified_at',
         'remember_token',
     ];

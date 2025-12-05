@@ -12,6 +12,8 @@ import Layout from './components/Common/Layout.jsx';
 // --- Pages Publik/User ---
 import LoginPage from './pages/LoginPage.jsx';
 import RegisterPage from './pages/RegisterPage.jsx';
+import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx';
+import ResetPasswordPage from './pages/ResetPasswordPage.jsx';
 import HomePage from './pages/HomePage.jsx';
 import AcaraDetailPage from './pages/AcaraDetailPage.jsx';
 import AgendaSayaPage from './pages/AgendaSayaPage.jsx';
@@ -20,6 +22,9 @@ import EventPage from './pages/EventPage.jsx'; // <-- Pastikan file ini ada
 // --- Submission Pages (PJ 2) ---
 import AjukanPenyelenggaraPage from './pages/AjukanPenyelenggarapage.jsx'; 
 import AjukanAcaraPage from './pages/AjukanAcaraPage.jsx';
+
+// --- Profile Pages ---
+import ProfilePage from './pages/ProfilePage.jsx';
 
 // --- Admin Pages (PJ 1) ---
 import AdminDashboardPage from './pages/Admin/AdminDashboardPage.jsx';
@@ -33,6 +38,8 @@ const router = createBrowserRouter([
     children: [
       { path: '/login', element: <LoginPage /> },
       { path: '/register', element: <RegisterPage /> },
+      { path: '/forgot-password', element: <ForgotPasswordPage /> },
+      { path: '/reset-password', element: <ResetPasswordPage /> },
 
       {
         element: <Layout />, 
@@ -48,6 +55,7 @@ const router = createBrowserRouter([
           { 
             element: <ProtectedRoute allowedRoles={['User', 'Admin']} />,
             children: [
+                { path: '/profile', element: <ProfilePage /> },
                 { path: '/agenda-saya', element: <AgendaSayaPage /> },
                 { path: '/ajukan-penyelenggara', element: <AjukanPenyelenggaraPage /> },
                 { path: '/ajukan-acara', element: <AjukanAcaraPage /> },

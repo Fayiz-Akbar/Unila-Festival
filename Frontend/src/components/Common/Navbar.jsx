@@ -112,8 +112,12 @@ const Navbar = () => {
                           <p className="text-sm font-bold text-white leading-none group-hover:text-[#FF7F3E] transition">{user.nama || 'User'}</p>
                           <p className="text-[10px] text-gray-400 uppercase tracking-wide mt-1">{user.peran || 'Member'}</p>
                        </div>
-                       <div className="h-9 w-9 rounded-full bg-white/10 text-white flex items-center justify-center font-bold text-sm border border-white/20 shadow-sm group-hover:border-[#FF7F3E] transition backdrop-blur-sm">
-                          {getUserInitial()}
+                       <div className="h-9 w-9 rounded-full bg-white/10 text-white flex items-center justify-center font-bold text-sm border border-white/20 shadow-sm group-hover:border-[#FF7F3E] transition backdrop-blur-sm overflow-hidden">
+                          {user.foto_profile_url ? (
+                            <img src={user.foto_profile_url} alt={user.nama} className="w-full h-full object-cover" />
+                          ) : (
+                            getUserInitial()
+                          )}
                        </div>
                    </button>
                    
@@ -123,6 +127,14 @@ const Navbar = () => {
                         <p className="text-xs text-gray-400">Halo,</p>
                         <p className="text-sm font-bold text-[#1a1a2e] truncate">{user.nama}</p>
                       </div>
+                      
+                      <Link 
+                        to="/profile"
+                        onClick={() => setIsProfileOpen(false)}
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#FF7F3E]"
+                      >
+                        Profile
+                      </Link>
                       
                       <button 
                         onClick={onLogout}

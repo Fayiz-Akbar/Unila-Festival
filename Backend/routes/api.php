@@ -31,6 +31,8 @@ Route::get('/kategori', [PublicAcaraController::class, 'getAllKategori']); // Da
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
 // ===================================================================
 // == 3. RUTE USER TERPROTEKSI (Perlu Login)
@@ -44,6 +46,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) { // PJ 2
         return $request->user(); // Mendapatkan data user yg sedang login
     });
+    Route::put('/user/profile', [AuthController::class, 'updateProfile']); // Update Profile
 
     // --- WILAYAH PJ 2 (Submission) ---
     Route::prefix('submission')->group(function () {

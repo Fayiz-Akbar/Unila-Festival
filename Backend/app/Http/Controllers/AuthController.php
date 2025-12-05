@@ -154,4 +154,182 @@ class AuthController extends Controller
             ], 200);
         }
     }
+
+    /**
+     * Update User Profile
+     */
+    public function updateProfile(Request $request)
+    {
+        $user = $request->user();
+
+        // Validasi Input
+        $validator = Validator::make($request->all(), [
+            'nama' => 'required|string|max:255',
+            'email' => 'required|email|unique:pengguna,email,' . $user->id,
+            'current_password' => 'required_with:password',
+            'password' => 'nullable|min:6|confirmed',
+            'foto_profile' => 'nullable|image|mimes:jpeg,png,jpg|max:2048', // Max 2MB
+        ], [
+            'current_password.required_with' => 'Password lama wajib diisi untuk mengubah password.'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            // Update data user
+            $user->nama = $request->nama;
+            $user->email = $request->email;
+
+            // Update password jika diisi
+            if ($request->filled('password')) {
+                // Validasi password lama
+                if (!Hash::check($request->current_password, $user->kata_sandi)) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Password lama tidak sesuai.'
+                    ], 422);
+                }
+                
+                $user->kata_sandi = Hash::make($request->password);
+            }
+
+            // Upload foto profile jika ada
+            if ($request->hasFile('foto_profile')) {
+                // Hapus foto lama jika ada
+                if ($user->foto_profile_url) {
+                    $oldPath = str_replace(asset('storage/'), '', $user->foto_profile_url);
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($oldPath);
+                }
+                
+                // Simpan foto baru
+                $fotoPath = $request->file('foto_profile')->store('profiles', 'public');
+                $user->foto_profile_url = asset('storage/' . $fotoPath);
+            }
+
+            $user->save();
+
+            // Reload relasi
+            $user->load('penyelenggaraYangDikelola');
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Profile berhasil diperbarui',
+                'user' => $user
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan server: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Send password reset link
+     */
+    public function forgotPassword(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email|exists:pengguna,email',
+        ], [
+            'email.exists' => 'Email tidak terdaftar dalam sistem.'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $user = User::where('email', $request->email)->first();
+            
+            // Generate token reset password (dalam implementasi nyata, kirim via email)
+            $token = Hash::make($user->email . now());
+            
+            // Simpan token ke database atau cache (untuk demo, kita return token)
+            // Dalam produksi, token harus disimpan dan link dikirim via email
+            
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Link reset password telah dikirim ke email Anda.',
+                // CATATAN: Dalam produksi, jangan return token. Kirim via email.
+                'token' => base64_encode($user->email . '|' . time()),
+                'email' => $user->email
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan server: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Reset password
+     */
+    public function resetPassword(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'token' => 'required',
+            'email' => 'required|email|exists:pengguna,email',
+            'password' => 'required|min:6|confirmed',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            // Validasi token (dalam implementasi nyata, validasi dari database/cache)
+            $tokenData = base64_decode($request->token);
+            $parts = explode('|', $tokenData);
+            
+            if (count($parts) !== 2 || $parts[0] !== $request->email) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Token tidak valid atau sudah kadaluarsa.'
+                ], 400);
+            }
+
+            // Cek apakah token belum kadaluarsa (maksimal 1 jam)
+            $tokenTime = (int)$parts[1];
+            if (time() - $tokenTime > 3600) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Token sudah kadaluarsa. Silakan kirim ulang permintaan reset password.'
+                ], 400);
+            }
+
+            // Update password
+            $user = User::where('email', $request->email)->first();
+            $user->kata_sandi = Hash::make($request->password);
+            $user->save();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Password berhasil direset. Silakan login dengan password baru Anda.'
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan server: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

@@ -20,6 +20,25 @@ const authApi = {
   getUser: async () => {
     return await axiosClient.get("/user");
   },
+
+  // Update Profile User
+  updateProfile: async (data) => {
+    return await axiosClient.post("/user/profile?_method=PUT", data, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+  },
+
+  // Forgot Password
+  forgotPassword: async (email) => {
+    return await axiosClient.post("/forgot-password", { email });
+  },
+
+  // Reset Password
+  resetPassword: async (data) => {
+    return await axiosClient.post("/reset-password", data);
+  },
 };
 
 export default authApi;
