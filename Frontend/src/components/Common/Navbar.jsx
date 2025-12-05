@@ -32,7 +32,7 @@ const Navbar = () => {
     navigate('/login');
   };
 
-  // Helper style active link (Warna teks disesuaikan dengan background gelap)
+  // Helper style active link (Konsisten untuk semua menu)
   const linkStyle = (path) => 
     `text-sm font-medium transition-colors ${location.pathname === path ? "text-[#FF7F3E]" : "text-gray-300 hover:text-white"}`;
 
@@ -77,13 +77,29 @@ const Navbar = () => {
                         </Link>
                     )}
 
-                    <Link to="/agenda-saya" className={linkStyle('/agenda-saya')}>
-                        Event Saya
-                    </Link>
+                    {/* --- LOGIKA BARU: Cek Status Penyelenggara --- */}
                     
-                    <Link to="/ajukan-acara" className={linkStyle('/ajukan-acara')}>
-                        Ajukan Event
-                    </Link>
+                    {/* KONDISI A: User BELUM jadi Penyelenggara Approved */}
+                    {!user.is_penyelenggara && (
+                        <Link to="/ajukan-penyelenggara" className={linkStyle('/ajukan-penyelenggara')}>
+                            Daftar Penyelenggara
+                        </Link>
+                    )}
+
+                    {/* KONDISI B: User SUDAH jadi Penyelenggara Approved */}
+                    {user.is_penyelenggara && (
+                        <>
+                            <Link to="/agenda-saya" className={linkStyle('/agenda-saya')}>
+                                Event Saya
+                            </Link>
+                            
+                            <Link to="/ajukan-acara" className={linkStyle('/ajukan-acara')}>
+                                Ajukan Event
+                            </Link>
+                        </>
+                    )}
+                    {/* ------------------------------------------- */}
+
                 </div>
 
                 {/* Profil Dropdown */}
@@ -158,12 +174,26 @@ const Navbar = () => {
             
             {user && (
                 <>
-                   <p className="px-3 pt-4 pb-1 text-xs font-bold text-gray-500 uppercase">Menu User</p>
-                   {user.peran === 'Admin' && (
-                      <Link to="/admin/dashboard" className="block px-3 py-2 rounded-md text-base font-medium text-red-400 hover:text-red-300 hover:bg-white/5">Dashboard Admin</Link>
-                   )}
-                   <Link to="/agenda-saya" className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-white/5">Event Saya</Link>
-                   <Link to="/ajukan-acara" className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-white/5">Ajukan Event</Link>
+                    <p className="px-3 pt-4 pb-1 text-xs font-bold text-gray-500 uppercase">Menu User</p>
+                    
+                    {user.peran === 'Admin' && (
+                       <Link to="/admin/dashboard" className="block px-3 py-2 rounded-md text-base font-medium text-red-400 hover:text-red-300 hover:bg-white/5">Dashboard Admin</Link>
+                    )}
+
+                    {/* --- LOGIKA MOBILE --- */}
+                    {!user.is_penyelenggara && (
+                        // Di sini juga disamakan stylenya dengan menu biasa
+                        <Link to="/ajukan-penyelenggara" className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-white/5">
+                            Daftar Penyelenggara
+                        </Link>
+                    )}
+
+                    {user.is_penyelenggara && (
+                        <>
+                            <Link to="/agenda-saya" className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-white/5">Event Saya</Link>
+                            <Link to="/ajukan-acara" className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-white/5">Ajukan Event</Link>
+                        </>
+                    )}
                 </>
             )}
           </div>

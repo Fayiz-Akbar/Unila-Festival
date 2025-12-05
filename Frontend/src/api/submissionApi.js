@@ -36,6 +36,26 @@ const submissionApi = {
      return axiosClient.post(`/submission/acara/${id}?_method=PUT`, formData, {
         headers: { "Content-Type": "multipart/form-data" }
      });
+  },
+
+  /**
+   * Mengajukan penyelenggara baru.
+   * Endpoint: POST /api/submission/penyelenggara
+   */
+  submitPenyelenggara: (formData) => {
+    return axiosClient.post("/submission/penyelenggara", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data", // Penting untuk upload file
+      },
+    });
+  },
+
+  /**
+   * Mengambil daftar penyelenggara milik user yang sedang login.
+   * Endpoint: GET /api/submission/penyelenggara
+   */
+  getPenyelenggaraMilikUser: () => {
+    return axiosClient.get("/submission/penyelenggara");
   }
 };
 
