@@ -89,11 +89,11 @@ const Navbar = () => {
                     {showOrganizerMenu ? (
                         /* Tampilan PENYELENGGARA */
                         <>
-                            <Link to="/agenda-saya" className={linkStyle('/agenda-saya')}>
+                            <Link to="/kelola-event" className={linkStyle('/kelola-event')}>
                                 Kelola Event
                             </Link>
                             <Link to="/ajukan-acara" className={linkStyle('/ajukan-acara')}>
-                                Ajukan Event
+                                Buat Event
                             </Link>
                         </>
                     ) : (
@@ -138,6 +138,22 @@ const Navbar = () => {
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#FF7F3E]"
                       >
                         Profile
+                      </Link>
+                      
+                      <Link 
+                        to="/agenda-saya"
+                        onClick={() => setIsProfileOpen(false)}
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#FF7F3E]"
+                      >
+                        Agenda Saya
+                      </Link>
+                      
+                      <Link 
+                        to="/event-tersimpan"
+                        onClick={() => setIsProfileOpen(false)}
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#FF7F3E]"
+                      >
+                        Event Tersimpan
                       </Link>
                       
                       <button 

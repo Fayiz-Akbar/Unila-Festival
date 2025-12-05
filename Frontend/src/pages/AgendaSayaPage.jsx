@@ -15,18 +15,18 @@ const AgendaSayaPage = () => {
           {/* Header Section */}
           <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
              <div>
-                <h1 className="text-3xl font-extrabold text-[#1a1a2e]">Event Saya</h1>
+                <h1 className="text-3xl font-extrabold text-[#1a1a2e]">Agenda Saya</h1>
                 <p className="text-gray-600 mt-1">
-                   Halo <span className="font-semibold text-[#FF7F3E]">{user?.nama || 'User'}</span>, kelola semua acara yang Anda buat di sini.
+                   Halo <span className="font-semibold text-[#FF7F3E]">{user?.nama || 'User'}</span>, kelola semua event yang Anda ikuti di sini.
                 </p>
              </div>
              
              <Link 
-               to="/ajukan-acara" 
-               className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-full shadow-sm text-white bg-[#1a1a2e] hover:bg-gray-800 transition-all transform hover:-translate-y-0.5"
+               to="/acara" 
+               className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-full shadow-sm text-white bg-[#FF7F3E] hover:bg-orange-600 transition-all transform hover:-translate-y-0.5"
              >
-               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
-               Buat Event Baru
+               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+               Jelajahi Event
              </Link>
           </div>
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import submissionApi from '../../api/submissionApi';
+import registrationApi from '../../api/registrationApi';
 
 // Sesuaikan URL storage backend
 const STORAGE_URL = "http://127.0.0.1:8000/storage/";
@@ -18,27 +18,15 @@ const AgendaSayaList = () => {
   const fetchMyEvents = async () => {
     try {
       setLoading(true);
-      const response = await submissionApi.getAcaraMilikUser();
+      const response = await registrationApi.getAgendaSaya();
       // Handle response structure Laravel
       const data = response.data.data ? response.data.data : response.data;
       setMyEvents(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error("Gagal mengambil event saya:", err);
+      console.error("Gagal mengambil agenda saya:", err);
       setError("Gagal memuat data. Pastikan Anda sudah login.");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleDelete = async (id) => {
-    if (window.confirm("Apakah Anda yakin ingin menghapus event ini?")) {
-      try {
-        await submissionApi.deleteAcara(id);
-        // Refresh list setelah hapus
-        setMyEvents(myEvents.filter(event => event.id !== id));
-      } catch (err) {
-        alert("Gagal menghapus event.");
-      }
     }
   };
 
@@ -73,12 +61,12 @@ const AgendaSayaList = () => {
   if (myEvents.length === 0) return (
     <div className="text-center py-16 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-300">
         <div className="mb-4 text-gray-300">
-           <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+           <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
         </div>
-        <h3 className="text-lg font-bold text-gray-900">Belum ada event yang dibuat</h3>
-        <p className="text-gray-500 mb-6">Mulai buat event pertamamu sekarang!</p>
-        <Link to="/ajukan-acara" className="px-6 py-3 bg-[#FF7F3E] text-white rounded-full font-bold hover:bg-orange-600 transition shadow-md">
-            + Buat Event Baru
+        <h3 className="text-lg font-bold text-gray-900">Belum ada event yang Anda ikuti</h3>
+        <p className="text-gray-500 mb-6">Daftar ke event menarik sekarang!</p>
+        <Link to="/acara" className="px-6 py-3 bg-[#FF7F3E] text-white rounded-full font-bold hover:bg-orange-600 transition shadow-md">
+            Jelajahi Event
         </Link>
     </div>
   );
@@ -120,28 +108,17 @@ const AgendaSayaList = () => {
                {/* Action Buttons */}
                <div className="flex items-center gap-3 mt-2 pt-4 border-t border-gray-50">
                   <Link 
-                    to={`/acara/${event.slug}`} 
-                    className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline"
+                    to={`/acara/${event.acara?.slug || event.slug}`} 
+                    className="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
                   >
-                    Lihat Halaman
+                    Lihat Detail Event
                   </Link>
                   
                   <div className="flex-grow"></div>
 
-                  <button 
-                    disabled 
-                    className="px-4 py-2 text-sm font-medium text-gray-500 bg-gray-100 rounded-lg cursor-not-allowed"
-                    title="Fitur edit akan segera hadir"
-                  >
-                    Edit
-                  </button>
-                  
-                  <button 
-                    onClick={() => handleDelete(event.id)}
-                    className="px-4 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
-                  >
-                    Hapus
-                  </button>
+                  <span className="text-xs text-gray-500">
+                    Terdaftar pada: {new Date(event.created_at).toLocaleDateString('id-ID')}
+                  </span>
                </div>
             </div>
           </div>

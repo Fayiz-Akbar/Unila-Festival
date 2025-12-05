@@ -1,11 +1,61 @@
 // Frontend/src/components/Common/CardAcara.jsx
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext'; 
+import { useAuth } from '../../context/AuthContext';
+import eventTersimpanApi from '../../api/eventTersimpanApi'; 
 
 const CardAcara = ({ acara }) => {
   const { user } = useAuth(); 
   const navigate = useNavigate();
+  const [isSaved, setIsSaved] = useState(false);
+  const [isLoadingBookmark, setIsLoadingBookmark] = useState(false);
+
+  // Cek status bookmark saat component mount
+  useEffect(() => {
+    if (user && acara.id) {
+      checkBookmarkStatus();
+    }
+  }, [user, acara.id]);
+
+  const checkBookmarkStatus = async () => {
+    try {
+      const response = await eventTersimpanApi.checkEvent(acara.id);
+      setIsSaved(response.data.is_saved);
+      console.log('Bookmark status for event', acara.id, ':', response.data.is_saved);
+    } catch (error) {
+      console.error('Error checking bookmark:', error);
+      // Jika error (misal belum login), set ke false
+      setIsSaved(false);
+    }
+  };
+
+  const handleBookmarkClick = async (e) => {
+    e.stopPropagation(); // Prevent card click
+    console.log('BOOKMARK CLICKED!', acara.id);
+    
+    if (!user) {
+      if (window.confirm("Anda harus login untuk menyimpan event. Login sekarang?")) {
+        navigate('/login');
+      }
+      return;
+    }
+
+    setIsLoadingBookmark(true);
+    try {
+      if (isSaved) {
+        await eventTersimpanApi.hapusEvent(acara.id);
+        setIsSaved(false);
+      } else {
+        await eventTersimpanApi.simpanEvent(acara.id);
+        setIsSaved(true);
+      }
+    } catch (error) {
+      console.error('Error toggling bookmark:', error);
+      alert(error.response?.data?.message || 'Terjadi kesalahan');
+    } finally {
+      setIsLoadingBookmark(false);
+    }
+  };
 
   const formatDate = (dateString) => {
     if (!dateString) return '-';
@@ -34,6 +84,8 @@ const CardAcara = ({ acara }) => {
       navigate(`/acara/${acara.slug}`);
     }
   };
+
+  console.log('CardAcara rendered - NEW VERSION', acara.id);
 
   return (
     // Ubah dari Link ke div, dan pasang onClick di sini
@@ -72,12 +124,26 @@ const CardAcara = ({ acara }) => {
         </p>
 
         <div className="mt-auto pt-4 border-t border-gray-100 flex items-center justify-between">
-          <div className="flex items-center text-xs text-gray-500">
-             <svg className="w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-             </svg>
-             <span className="truncate max-w-[100px]">{acara.lokasi || 'Online'}</span>
+          <div className="flex items-center gap-3 text-xs text-gray-500">
+            {/* Icon Lokasi */}
+            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <span className="truncate max-w-[120px]">{acara.lokasi || 'Online'}</span>
+            
+            {/* TEST - Tombol Bookmark */}
+            <button
+              onClick={handleBookmarkClick}
+              disabled={isLoadingBookmark}
+              className="flex items-center gap-1 px-2 py-1 bg-gray-100 hover:bg-orange-50 rounded transition-all disabled:opacity-50"
+              title={isSaved ? 'Hapus dari simpanan' : 'Simpan event'}
+            >
+              <svg className={`w-4 h-4 ${isSaved ? 'text-[#FF7F3E]' : 'text-gray-500'}`} fill={isSaved ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
+              </svg>
+              <span className="text-gray-700 font-medium">Simpan</span>
+            </button>
           </div>
           
           {/* Tombol Detail (Hanya visual, klik ditangani div utama) */}

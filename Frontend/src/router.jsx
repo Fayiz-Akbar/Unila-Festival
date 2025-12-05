@@ -25,6 +25,8 @@ import AjukanAcaraPage from './pages/AjukanAcaraPage.jsx';
 
 // --- Profile Pages ---
 import ProfilePage from './pages/ProfilePage.jsx';
+import EventTersimpanPage from './pages/EventTersimpanPage.jsx';
+import KelolaEventPage from './pages/KelolaEventPage.jsx';
 
 // --- Admin Pages (PJ 1) ---
 import AdminDashboardPage from './pages/Admin/AdminDashboardPage.jsx';
@@ -57,6 +59,8 @@ const router = createBrowserRouter([
             children: [
                 { path: '/profile', element: <ProfilePage /> },
                 { path: '/agenda-saya', element: <AgendaSayaPage /> },
+                { path: '/event-tersimpan', element: <EventTersimpanPage /> },
+                { path: '/kelola-event', element: <KelolaEventPage /> },
                 { path: '/ajukan-penyelenggara', element: <AjukanPenyelenggaraPage /> },
                 { path: '/ajukan-acara', element: <AjukanAcaraPage /> },
             ]
