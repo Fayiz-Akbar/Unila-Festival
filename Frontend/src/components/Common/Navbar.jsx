@@ -63,7 +63,7 @@ const Navbar = () => {
             
             {/* 1. Menu Umum */}
             <Link to="/" className={linkStyle('/')}>Beranda</Link>
-            <Link to="/acara" className={linkStyle('/acara')}>Event</Link> {/* Diubah jadi "Event" */}
+            <Link to="/acara" className={linkStyle('/acara')}>Event</Link>
 
             {/* 2. Logika Menu Berdasarkan Auth */}
             {user ? (
@@ -78,10 +78,12 @@ const Navbar = () => {
                     )}
 
                     <Link to="/agenda-saya" className={linkStyle('/agenda-saya')}>
-                        Kelola Event
+                        Event Saya
                     </Link>
                     
-                    {/* Menu "Jadi Partner" dihapus */}
+                    <Link to="/ajukan-acara" className={linkStyle('/ajukan-acara')}>
+                        Ajukan Event
+                    </Link>
                 </div>
 
                 {/* Profil Dropdown */}
@@ -105,12 +107,6 @@ const Navbar = () => {
                         <p className="text-xs text-gray-400">Halo,</p>
                         <p className="text-sm font-bold text-[#1a1a2e] truncate">{user.nama}</p>
                       </div>
-
-                      {user.peran === 'Admin' && (
-                        <Link to="/admin/dashboard" className="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-semibold">
-                            Dashboard Admin
-                        </Link>
-                      )}
                       
                       <button 
                         onClick={onLogout}
@@ -158,12 +154,14 @@ const Navbar = () => {
         <div className="md:hidden bg-[#1a1a2e] border-t border-white/10 shadow-xl">
           <div className="pt-2 pb-4 space-y-1 px-4">
             <Link to="/" className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-white/5">Beranda</Link>
-            <Link to="/acara" className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-white/5">Event</Link> {/* Diubah jadi "Event" */}
+            <Link to="/acara" className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-white/5">Event</Link>
             
             {user && (
                 <>
                    <p className="px-3 pt-4 pb-1 text-xs font-bold text-gray-500 uppercase">Menu User</p>
-                   {/* Menu "Jadi Partner" dihapus */}
+                   {user.peran === 'Admin' && (
+                      <Link to="/admin/dashboard" className="block px-3 py-2 rounded-md text-base font-medium text-red-400 hover:text-red-300 hover:bg-white/5">Dashboard Admin</Link>
+                   )}
                    <Link to="/agenda-saya" className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-white/5">Event Saya</Link>
                    <Link to="/ajukan-acara" className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-white/5">Ajukan Event</Link>
                 </>
