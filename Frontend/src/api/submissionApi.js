@@ -1,28 +1,42 @@
 import axiosClient from "./axiosClient";
 
 const submissionApi = {
-  // 1. Mengajukan diri sebagai Penyelenggara
-  submitPenyelenggara: async (formData) => {
-    return await axiosClient.post("/submission/penyelenggara", formData, {
+  /**
+   * Mengambil daftar acara yang dibuat oleh user yang sedang login.
+   * Endpoint: GET /api/submission/acara
+   */
+  getAcaraMilikUser: () => {
+    return axiosClient.get("/submission/acara");
+  },
+
+  /**
+   * Mengajukan acara baru.
+   * Endpoint: POST /api/submission/acara
+   */
+  createAcara: (formData) => {
+    return axiosClient.post("/submission/acara", formData, {
       headers: {
-        "Content-Type": "multipart/form-data", // Wajib untuk upload file (logo)
+        "Content-Type": "multipart/form-data", // Penting untuk upload gambar
       },
     });
   },
 
-  // 2. Cek status pengajuan Penyelenggara (apakah sudah disetujui?)
-  checkStatusPenyelenggara: async () => {
-    return await axiosClient.get("/submission/penyelenggara/status");
+  /**
+   * Menghapus/Membatalkan pengajuan acara.
+   * Endpoint: DELETE /api/submission/acara/{id}
+   */
+  deleteAcara: (id) => {
+    return axiosClient.delete(`/submission/acara/${id}`);
   },
-
-  // 3. Mengajukan Acara Baru
-  submitAcara: async (formData) => {
-    return await axiosClient.post("/submission/acara", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data", // Wajib untuk upload file (poster)
-      },
-    });
-  },
+  
+  /**
+   * Update acara (jika diperlukan nanti).
+   */
+  updateAcara: (id, formData) => {
+     return axiosClient.post(`/submission/acara/${id}?_method=PUT`, formData, {
+        headers: { "Content-Type": "multipart/form-data" }
+     });
+  }
 };
 
 export default submissionApi;

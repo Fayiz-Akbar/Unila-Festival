@@ -1,74 +1,43 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import registrationApi from "../api/registrationApi";
-import AgendaSayaList from "../components/Public/AgendaSayaList"; // <-- 1. Import list baru
+import React from 'react';
+import { Link } from 'react-router-dom';
+// import Layout from '../components/Common/Layout'; // HAPUS INI JIKA MASIH ADA
+import AgendaSayaList from '../components/Public/AgendaSayaList';
+import { useAuth } from '../context/AuthContext';
 
-export default function AgendaSayaPage() {
-  const navigate = useNavigate();
-
-  const [agendaList, setAgendaList] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  // (Logika fetch data, redirect, dan error handling tetap sama persis)
-  useEffect(() => {
-    const fetchAgenda = async () => {
-      try {
-        setLoading(true);
-        const response = await registrationApi.getAgendaSaya();
-        setAgendaList(response.data);
-        setError(null);
-      } catch (err) {
-        console.error("Gagal mengambil agenda:", err);
-        if (err.response && (err.response.status === 401 || err.response.status === 419)) {
-          navigate("/login", {
-            state: { message: "Silakan login untuk melihat agenda Anda." },
-          });
-        } else {
-          setError("Gagal memuat agenda. Coba lagi nanti.");
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchAgenda();
-  }, [navigate]);
-
-  // --- 2. Logika render yang dirapikan ---
-  const renderContent = () => {
-    if (loading) {
-      return (
-        <div className="text-center py-12">
-          <p className="text-lg text-unila-medium">Memuat agenda Anda...</p>
-        </div>
-      );
-    }
-
-    if (error) {
-      return (
-        <div className="text-center py-12 bg-red-100 text-red-700 rounded-lg">
-          {error}
-        </div>
-      );
-    }
-
-    // Gunakan AgendaSayaList untuk menampilkan data
-    return <AgendaSayaList agendaList={agendaList} />;
-  };
+const AgendaSayaPage = () => {
+  const { user } = useAuth();
 
   return (
-    <div>
-      {/* --- 3. Judul Halaman yang Aesthetic --- */}
-      <h1 className="text-3xl md:text-4xl font-bold text-unila-deep mb-6 pb-4 border-b border-unila-light">
-        Agenda Saya
-      </h1>
-      <p className="text-lg text-unila-dark mb-8">
-        Berikut adalah semua acara yang telah Anda daftari.
-      </p>
+    // PERBAIKAN: Tambahkan 'pt-24' (padding top 6rem / 96px) agar tidak tertutup Navbar
+    <div className="bg-gray-50 min-h-screen py-12 pt-24">
+       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          
+          {/* Header Section */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+             <div>
+                <h1 className="text-3xl font-extrabold text-[#1a1a2e]">Event Saya</h1>
+                <p className="text-gray-600 mt-1">
+                   Halo <span className="font-semibold text-[#FF7F3E]">{user?.nama || 'User'}</span>, kelola semua acara yang Anda buat di sini.
+                </p>
+             </div>
+             
+             <Link 
+               to="/ajukan-acara" 
+               className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-full shadow-sm text-white bg-[#1a1a2e] hover:bg-gray-800 transition-all transform hover:-translate-y-0.5"
+             >
+               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
+               Buat Event Baru
+             </Link>
+          </div>
 
-      {/* Render konten (Loading, Error, atau List) */}
-      {renderContent()}
+          {/* List Component */}
+          <div className="max-w-5xl mx-auto md:mx-0 w-full">
+             <AgendaSayaList />
+          </div>
+
+       </div>
     </div>
   );
-}
+};
+
+export default AgendaSayaPage;
