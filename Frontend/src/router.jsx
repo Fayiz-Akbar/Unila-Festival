@@ -16,6 +16,10 @@ import HomePage from './pages/HomePage.jsx';
 import AcaraDetailPage from './pages/AcaraDetailPage.jsx';
 import AgendaSayaPage from './pages/AgendaSayaPage.jsx';
 
+// --- Submission Pages (PJ 2) ---
+import AjukanPenyelenggaraPage from './pages/AjukanPenyelenggarapage.jsx'; // Perhatikan: 'page' huruf kecil
+import AjukanAcaraPage from './pages/AjukanAcaraPage.jsx';
+
 // --- Admin Pages (PJ 1) ---
 import AdminDashboardPage from './pages/Admin/AdminDashboardPage.jsx';
 import AdminKategoriPage from './pages/Admin/AdminKategoriPage.jsx';
@@ -46,6 +50,8 @@ const router = createBrowserRouter([
             element: <ProtectedRoute allowedRoles={['User', 'Admin']} />,
             children: [
                 { path: '/agenda-saya', element: <AgendaSayaPage /> },
+                { path: '/ajukan-penyelenggara', element: <AjukanPenyelenggaraPage /> },
+                { path: '/ajukan-acara', element: <AjukanAcaraPage /> },
             ]
           }
         ]

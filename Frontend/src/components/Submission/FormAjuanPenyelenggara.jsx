@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { submissionApi } from "../../api/submissionApi"; 
+import submissionApi from "../../api/submissionApi"; 
 // Menggunakan komponen umum dari PJ 1 (Common)
 import Input from "../Common/Input";
 import Button from "../Common/button"; // Note: Sesuai file upload Anda 'button.jsx' huruf kecil
@@ -7,9 +7,8 @@ import Button from "../Common/button"; // Note: Sesuai file upload Anda 'button.
 export default function FormAjuanPenyelenggara() {
   const [form, setForm] = useState({
     nama_penyelenggara: "",
-    deskripsi: "",
-    alamat: "",
-    no_telp: "",
+    tipe: "Internal",
+    deskripsi_singkat: "",
   });
   const [logoFile, setLogoFile] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -39,15 +38,14 @@ export default function FormAjuanPenyelenggara() {
     // Bungkus data ke FormData karena ada file
     const formData = new FormData();
     formData.append("nama_penyelenggara", form.nama_penyelenggara);
-    formData.append("deskripsi", form.deskripsi);
-    formData.append("alamat", form.alamat);
-    formData.append("no_telp", form.no_telp);
+    formData.append("tipe", form.tipe);
+    formData.append("deskripsi_singkat", form.deskripsi_singkat);
     formData.append("logo", logoFile);
 
     try {
       await submissionApi.submitPenyelenggara(formData);
       setMessage({ type: "success", text: "Pengajuan Berhasil! Mohon tunggu validasi admin." });
-      setForm({ nama_penyelenggara: "", deskripsi: "", alamat: "", no_telp: "" }); // Reset
+      setForm({ nama_penyelenggara: "", tipe: "Internal", deskripsi_singkat: "" }); // Reset
       setLogoFile(null);
     } catch (error) {
       console.error("Gagal submit:", error);
@@ -82,39 +80,29 @@ export default function FormAjuanPenyelenggara() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Deskripsi Singkat</label>
-          <textarea
-            name="deskripsi"
+          <label className="block text-sm font-medium text-gray-700 mb-1">Tipe Penyelenggara</label>
+          <select
+            name="tipe"
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            rows="3"
-            value={form.deskripsi}
+            value={form.tipe}
             onChange={handleChange}
-            placeholder="Jelaskan tentang organisasi Anda..."
             required
-          />
+          >
+            <option value="Internal">Internal (HIMA/UKM Unila)</option>
+            <option value="Eksternal">Eksternal (Instansi Luar)</option>
+          </select>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">No. Telepon / WA</label>
-            <Input 
-              name="no_telp"
-              value={form.no_telp} 
-              onChange={handleChange} 
-              placeholder="08xxxx" 
-              required 
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Alamat Sekretariat</label>
-            <Input 
-              name="alamat"
-              value={form.alamat} 
-              onChange={handleChange} 
-              placeholder="Gedung..." 
-              required 
-            />
-          </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Deskripsi Singkat</label>
+          <textarea
+            name="deskripsi_singkat"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            rows="3"
+            value={form.deskripsi_singkat}
+            onChange={handleChange}
+            placeholder="Jelaskan tentang organisasi Anda..."
+          />
         </div>
 
         <div>

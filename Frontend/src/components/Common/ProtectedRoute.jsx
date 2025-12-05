@@ -4,7 +4,7 @@
 import { useAuth } from '../../context/AuthContext';
 import { Navigate, Outlet } from 'react-router-dom';
 
-export default function ProtectedRoute({ adminOnly = false }) {
+export default function ProtectedRoute({ allowedRoles = [] }) {
   const { user, token } = useAuth();
 
   // 1. Cek apakah user sudah login
@@ -13,9 +13,9 @@ export default function ProtectedRoute({ adminOnly = false }) {
     return <Navigate to="/login" replace />;
   }
 
-  // 2. Cek apakah rute ini hanya untuk Admin
-  if (adminOnly && user.peran !== 'Admin') {
-    // Jika user BUKAN admin, lempar ke Homepage
+  // 2. Cek apakah user memiliki role yang diizinkan
+  if (allowedRoles.length > 0 && !allowedRoles.includes(user.peran)) {
+    // Jika role user tidak diizinkan, lempar ke Homepage
     return <Navigate to="/" replace />;
   }
 

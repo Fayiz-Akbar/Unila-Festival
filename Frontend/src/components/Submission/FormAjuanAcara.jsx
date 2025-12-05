@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { submissionApi } from "../../api/submissionApi";
+import submissionApi from "../../api/submissionApi";
 // Kita butuh publicApi untuk ambil daftar kategori (tugas PJ 3/1, tapi kita pakai di sini)
-import { publicApi } from "../../api/publicApi"; 
+import publicApi from "../../api/publicApi"; 
 import Input from "../Common/Input";
 import Button from "../Common/button";
 

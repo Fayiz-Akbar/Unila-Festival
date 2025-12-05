@@ -18,9 +18,8 @@ class PenyelenggaraController extends Controller
         // 1. Validasi Input
         $validator = Validator::make($request->all(), [
             'nama_penyelenggara' => 'required|string|max:255|unique:penyelenggara,nama_penyelenggara',
-            'deskripsi' => 'required|string',
-            'alamat' => 'required|string',
-            'no_telp' => 'required|string|max:20',
+            'tipe' => 'required|in:Internal,Eksternal',
+            'deskripsi_singkat' => 'nullable|string',
             'logo' => 'required|image|mimes:jpeg,png,jpg|max:2048', // Max 2MB
         ]);
 
@@ -33,22 +32,39 @@ class PenyelenggaraController extends Controller
         }
 
         try {
-            // 2. Upload Logo
-            $logoPath = null;
+            // 2. Cek apakah user sudah pernah mengajukan penyelenggara yang pending
+            $existingPending = $request->user()
+                ->penyelenggaraYangDikelola()
+                ->wherePivot('status_tautan', 'pending')
+                ->exists();
+            
+            if ($existingPending) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Anda masih memiliki pengajuan yang sedang diproses. Mohon tunggu validasi admin.'
+                ], 422);
+            }
+
+            // 3. Upload Logo
+            $logoUrl = null;
             if ($request->hasFile('logo')) {
                 // Simpan di folder: storage/app/public/logos
                 $logoPath = $request->file('logo')->store('logos', 'public');
+                $logoUrl = asset('storage/' . $logoPath);
             }
 
-            // 3. Simpan ke Database
+            // 4. Simpan ke tabel penyelenggara
             $penyelenggara = Penyelenggara::create([
-                'user_id' => $request->user()->id, // ID user yang sedang login
                 'nama_penyelenggara' => $request->nama_penyelenggara,
-                'deskripsi' => $request->deskripsi,
-                'alamat' => $request->alamat,
-                'no_telp' => $request->no_telp,
-                'logo' => $logoPath,
-                'status_validasi' => 'pending', // Default status
+                'tipe' => $request->tipe,
+                'deskripsi_singkat' => $request->deskripsi_singkat,
+                'logo_url' => $logoUrl,
+            ]);
+            
+            // 5. Hubungkan user dengan penyelenggara melalui tabel pivot (pengelola_penyelenggara)
+            $request->user()->penyelenggaraYangDikelola()->attach($penyelenggara->id, [
+                'status_tautan' => 'pending',
+                'catatan_admin' => null,
             ]);
 
             return response()->json([
@@ -66,15 +82,19 @@ class PenyelenggaraController extends Controller
     }
     
     /**
-     * Cek status pengajuan saya
+     * Mendapatkan daftar penyelenggara milik user yang sedang login
      */
-    public function myStatus(Request $request) {
-        $submission = Penyelenggara::where('user_id', $request->user()->id)->first();
-        
-        if(!$submission) {
-            return response()->json(['status' => 'not_found', 'message' => 'Belum mengajukan'], 404);
-        }
+    public function index(Request $request)
+    {
+        // Ambil semua penyelenggara yang dikelola oleh user ini
+        $penyelenggara = $request->user()
+            ->penyelenggaraYangDikelola()
+            ->withPivot('status_tautan', 'catatan_admin')
+            ->get();
 
-        return response()->json(['status' => 'success', 'data' => $submission]);
+        return response()->json([
+            'status' => 'success',
+            'data' => $penyelenggara
+        ]);
     }
 }
