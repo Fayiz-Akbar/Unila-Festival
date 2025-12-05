@@ -36,5 +36,9 @@ class DatabaseSeeder extends Seeder
             'peran' => 'User',
             'remember_token' => \Illuminate\Support\Str::random(10),
         ]);
+
+        $this->call([
+            AcaraSeeder::class,
+        ]);
     }
 }

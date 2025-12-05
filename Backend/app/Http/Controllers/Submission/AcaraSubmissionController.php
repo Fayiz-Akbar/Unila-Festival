@@ -5,75 +5,126 @@ namespace App\Http\Controllers\Submission;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Acara;
-use App\Models\Penyelenggara;
-use Illuminate\Support\Facades\Validator;
+use App\Models\PengelolaPenyelenggara; // Pastikan Model ini ada
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class AcaraSubmissionController extends Controller
 {
+    /**
+     * Menampilkan daftar acara milik user yang sedang login (Penyelenggara).
+     */
+    public function index()
+    {
+        $user = Auth::user();
+
+        // 1. Cari ID Penyelenggara yang dikelola oleh user ini
+        // Asumsi: Satu user bisa mengelola satu atau lebih penyelenggara.
+        // Kita ambil yang pertama saja untuk MVP ini.
+        $pengelola = DB::table('pengelola_penyelenggara')
+                        ->where('id_pengguna', $user->id)
+                        ->where('status_tautan', 'Approved') // Pastikan statusnya Approved
+                        ->first();
+
+        if (!$pengelola) {
+            // Jika user belum punya penyelenggara atau belum diapprove
+            return response()->json([
+                'message' => 'Anda belum terdaftar sebagai penyelenggara valid atau pengajuan masih pending.',
+                'data' => []
+            ], 200); // Return kosong tapi sukses, biar frontend tidak error merah
+        }
+
+        // 2. Ambil acara berdasarkan id_penyelenggara tersebut
+        $acara = Acara::where('id_penyelenggara', $pengelola->id_penyelenggara)
+                      ->with('kategori') // Load relasi kategori
+                      ->orderBy('created_at', 'desc')
+                      ->get();
+
+        return response()->json($acara);
+    }
+
+    /**
+     * Menyimpan pengajuan acara baru.
+     */
     public function store(Request $request)
     {
-        // 1. Cek Hak Akses: Apakah User ini adalah Penyelenggara yang VALID?
-        $penyelenggara = Penyelenggara::where('user_id', $request->user()->id)
-            ->where('status_validasi', 'valid') // Pastikan kolom status di DB sesuai (misal: 'valid' atau 'disetujui')
-            ->first();
+        // 1. Validasi Input
+        $validated = $request->validate([
+            'judul' => 'required|string|max:255',
+            'deskripsi' => 'required|string',
+            'id_kategori' => 'required|exists:kategori,id',
+            'lokasi' => 'required|string',
+            'waktu_mulai' => 'required|date',
+            'waktu_selesai' => 'nullable|date|after:waktu_mulai',
+            'link_pendaftaran' => 'nullable|url',
+            'poster' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
 
-        if (!$penyelenggara) {
+        $user = Auth::user();
+
+        // 2. Cek Hak Akses Penyelenggara
+        $pengelola = DB::table('pengelola_penyelenggara')
+                        ->where('id_pengguna', $user->id)
+                        ->where('status_tautan', 'Approved')
+                        ->first();
+
+        if (!$pengelola) {
             return response()->json([
-                'status' => 'error',
                 'message' => 'Anda belum terdaftar sebagai penyelenggara valid. Silakan ajukan penyelenggara terlebih dahulu.'
             ], 403);
         }
 
-        // 2. Validasi Input Acara
-        $validator = Validator::make($request->all(), [
-            'nama_acara' => 'required|string|max:255',
-            'deskripsi' => 'required|string',
-            'kategori_id' => 'required|exists:kategori,id', // Pastikan tabel kategori ada
-            'tanggal_mulai' => 'required|date',
-            'tanggal_selesai' => 'required|date|after_or_equal:tanggal_mulai',
-            'lokasi' => 'required|string',
-            'harga_tiket' => 'required|numeric|min:0',
-            'kuota' => 'required|integer|min:1',
-            'poster' => 'required|image|mimes:jpeg,png,jpg|max:3072', // Max 3MB
+        // 3. Handle Upload Poster
+        $posterPath = null;
+        if ($request->hasFile('poster')) {
+            // Simpan di folder 'public/posters'
+            $posterPath = $request->file('poster')->store('posters', 'public');
+        }
+
+        // 4. Simpan ke Database
+        // Generate Slug Unik
+        $slug = Str::slug($validated['judul']);
+        if (Acara::where('slug', $slug)->exists()) {
+            $slug = $slug . '-' . time();
+        }
+
+        $acara = Acara::create([
+            'judul' => $validated['judul'],
+            'slug' => $slug,
+            'deskripsi' => $validated['deskripsi'],
+            'poster_url' => $posterPath, // Simpan path file
+            'id_pengaju' => $user->id,
+            'id_penyelenggara' => $pengelola->id_penyelenggara, // Ambil dari relasi
+            'id_kategori' => $validated['id_kategori'],
+            'lokasi' => $validated['lokasi'],
+            'waktu_mulai' => $validated['waktu_mulai'],
+            'waktu_selesai' => $validated['waktu_selesai'] ?? null,
+            'link_pendaftaran' => $validated['link_pendaftaran'] ?? null,
+            'status' => 'Pending', // Default status saat diajukan
         ]);
 
-        if ($validator->fails()) {
-            return response()->json(['status' => 'error', 'errors' => $validator->errors()], 422);
+        return response()->json([
+            'message' => 'Acara berhasil diajukan dan menunggu validasi.',
+            'data' => $acara
+        ], 201);
+    }
+
+    /**
+     * Menghapus acara (Hanya jika status masih Draft/Pending/Rejected).
+     */
+    public function destroy($id)
+    {
+        $user = Auth::user();
+        $acara = Acara::findOrFail($id);
+
+        // Pastikan yang menghapus adalah pemilik acara
+        if ($acara->id_pengaju !== $user->id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        try {
-            // 3. Upload Poster
-            $posterPath = null;
-            if ($request->hasFile('poster')) {
-                $posterPath = $request->file('poster')->store('posters', 'public');
-            }
+        $acara->delete();
 
-            // 4. Insert Data Acara
-            $acara = Acara::create([
-                'penyelenggara_id' => $penyelenggara->id,
-                'kategori_id' => $request->kategori_id,
-                'nama_acara' => $request->nama_acara,
-                'deskripsi' => $request->deskripsi,
-                'tanggal_mulai' => $request->tanggal_mulai,
-                'tanggal_selesai' => $request->tanggal_selesai,
-                'lokasi' => $request->lokasi,
-                'harga_tiket' => $request->harga_tiket,
-                'kuota' => $request->kuota,
-                'poster' => $posterPath,
-                'status_acara' => 'pending', // Menunggu approval Admin (PJ 1)
-            ]);
-
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Acara berhasil diajukan! Menunggu persetujuan admin.',
-                'data' => $acara
-            ], 201);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Gagal menyimpan acara: ' . $e->getMessage()
-            ], 500);
-        }
+        return response()->json(['message' => 'Acara berhasil dihapus.']);
     }
 }

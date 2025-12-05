@@ -1,87 +1,85 @@
 // Frontend/src/components/Common/CardAcara.jsx
-// (PJ 1 - GATEKEEPER) - Komponen Card Acara Publik
-// Menggunakan tema Amber/Primary.
-
+import React from 'react';
 import { Link } from 'react-router-dom';
-import { format } from 'date-fns';
 
 const CardAcara = ({ acara }) => {
-  if (!acara) return null;
-
-  // Helper untuk format tanggal
-  const formattedDate = (date) => {
-    return date ? format(new Date(date), 'dd MMMM yyyy') : 'Tanggal Tidak Tersedia';
+  // Format tanggal (Database: waktu_mulai)
+  const formatDate = (dateString) => {
+    if (!dateString) return '-';
+    const options = { day: 'numeric', month: 'long', year: 'numeric' };
+    return new Date(dateString).toLocaleDateString('id-ID', options);
   };
-  
-  // Ambil data yang diperlukan
-  const { 
-      judul, 
-      slug, 
-      waktu_mulai, 
-      penyelenggara, 
-      kategori, 
-      lokasi, 
-      poster_url // Digunakan untuk background
-  } = acara;
+
+  // Helper truncate
+  const truncateText = (text, maxLength) => {
+    if (!text) return '';
+    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+  };
+
+  // URL Gambar (Database: poster_url)
+  // Jika null, pakai placeholder
+  const imageUrl = acara.poster_url 
+    ? `http://127.0.0.1:8000/storage/${acara.poster_url}` 
+    : 'https://via.placeholder.com/400x300?text=No+Poster';
 
   return (
-    <div className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-shadow duration-300 overflow-hidden group">
-      
-      {/* Gambar Poster/Thumbnail */}
-      <div 
-        className="h-40 bg-cover bg-center flex items-end p-3 relative"
-        style={{ 
-          backgroundImage: `url(${poster_url || 'https://via.placeholder.com/600x400?text=Poster+Segera'})`,
-          // Filter atau overlay agar teks di bawah terbaca
-          backgroundSize: 'cover'
-        }}
-      >
-        <div className="absolute inset-0 bg-secondary/30 transition-colors group-hover:bg-secondary/40"></div>
-        {/* Kategori Badge */}
-        <span className="relative z-10 text-xs font-semibold bg-primary text-white px-3 py-1 rounded-full shadow-md">
-          {kategori?.nama_kategori || 'Umum'}
-        </span>
+    <div className="group bg-white rounded-xl shadow-sm hover:shadow-md border border-gray-100 overflow-hidden transition-all duration-300 flex flex-col h-full">
+      {/* Bagian Gambar */}
+      <div className="relative h-48 w-full overflow-hidden bg-gray-200">
+        <img
+          src={imageUrl}
+          alt={acara.judul} // Database: judul
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+        />
+        {/* Badge Kategori */}
+        <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-semibold text-blue-600 shadow-sm">
+          {/* Pastikan Backend mengirim relasi kategori */}
+          {acara.kategori?.nama_kategori || 'Event'}
+        </div>
       </div>
 
-      {/* Detail Konten */}
-      <div className="p-5">
-        
-        {/* Judul Acara (Link ke Detail Page) */}
-        <Link to={`/acara/${slug}`} className="block">
-          <h2 className="text-xl font-bold text-secondary hover:text-primary transition-colors line-clamp-2">
-            {judul}
-          </h2>
-        </Link>
-        
-        {/* Penyelenggara */}
-        <p className="mt-1 text-sm text-gray-600">
-          Oleh: <span className="font-semibold text-primary">{penyelenggara?.nama_penyelenggara || 'Anonim'}</span>
+      {/* Bagian Konten */}
+      <div className="p-5 flex flex-col flex-grow">
+        <div className="flex items-center text-xs text-gray-500 mb-2 space-x-2">
+          {/* Ikon Kalender */}
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          {/* Database: waktu_mulai */}
+          <span>{formatDate(acara.waktu_mulai)}</span>
+        </div>
+
+        {/* Database: judul */}
+        <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2 leading-tight group-hover:text-blue-600 transition-colors">
+          {acara.judul}
+        </h3>
+
+        {/* Database: deskripsi */}
+        <p className="text-gray-600 text-sm line-clamp-2 mb-4 flex-grow">
+          {truncateText(acara.deskripsi, 100)}
         </p>
 
-        <hr className="my-3 border-gray-100" />
-        
-        {/* Info Waktu & Lokasi */}
-        <div className="space-y-1 text-sm text-gray-700">
-          <p className="flex items-center">
-            <span className="mr-2 text-primary">📅</span>
-            {formattedDate(waktu_mulai)}
-          </p>
-          <p className="flex items-center">
-            <span className="mr-2 text-primary">📍</span>
-            {lokasi || 'Online/Venue'}
-          </p>
-        </div>
-
-        {/* Tombol Lihat Detail */}
-        <div className="mt-5">
-          <Link
-            to={`/acara/${slug}`}
-            className="block text-center bg-gray-100 text-secondary border border-gray-200 py-2 rounded-lg font-semibold hover:bg-primary-100 hover:text-primary transition-colors"
+        <div className="mt-auto pt-4 border-t border-gray-100 flex items-center justify-between">
+          <div className="flex items-center text-xs text-gray-500">
+             <svg className="w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+             </svg>
+             {/* Database: lokasi */}
+             <span className="truncate max-w-[100px]">{acara.lokasi || 'Online'}</span>
+          </div>
+          
+          {/* Link Detail menggunakan slug */}
+          <Link 
+            to={`/acara/${acara.slug}`} 
+            className="text-sm font-medium text-blue-600 hover:text-blue-800 flex items-center transition-colors"
           >
-            Lihat Detail
+            Detail
+            <svg className="w-4 h-4 ml-1 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+            </svg>
           </Link>
         </div>
-
       </div>
     </div>
   );
