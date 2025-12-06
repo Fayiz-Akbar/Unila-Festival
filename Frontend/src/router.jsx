@@ -66,7 +66,8 @@ const router = createBrowserRouter([
 
       {
         path: '/admin',
-        element: <ProtectedRoute allowedRoles={['Admin']} />, 
+        // PERBAIKAN: Menambahkan 'admin' (kecil) agar cocok dengan data dari login
+        element: <ProtectedRoute allowedRoles={['Admin', 'admin']} />, 
         children: [
           {
             element: <AdminLayout />, 
