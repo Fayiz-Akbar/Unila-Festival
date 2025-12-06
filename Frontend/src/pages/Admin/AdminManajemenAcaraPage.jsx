@@ -26,26 +26,29 @@ export default function AdminManajemenAcaraPage() {
 
   // --- 2. Helper Functions (Perbaikan Logic) ---
   
-  // LOGIC JUDUL: Prioritas ambil 'judul' (dari Seeder) lalu 'nama_acara'
+  // LOGIC JUDUL
   const getTitle = (item) => {
     return item.judul || item.nama_acara || "Tanpa Judul";
   };
 
-  // LOGIC GAMBAR: Menangani Data Dummy (URL) vs Data Upload (Storage)
+  // LOGIC GAMBAR (PERBAIKAN DISINI)
   const getPoster = (item) => {
-    // 1. Cek apakah ada 'poster_url' (Data dari Seeder/Unsplash)
-    if (item.poster_url && item.poster_url.startsWith('http')) {
-        return item.poster_url;
-    }
-    
-    // 2. Cek apakah ada 'poster' (Data Upload Manual)
-    if (item.poster) {
-        // Jika upload manual, kita harus tambahkan URL server di depannya
-        return `http://localhost:8000/storage/${item.poster}`;
+    // Ambil value dari kolom poster_url (satu-satunya kolom gambar di DB)
+    const url = item.poster_url;
+
+    // 1. Jika kosong/null, pakai placeholder
+    if (!url) {
+      return "https://via.placeholder.com/150?text=No+Image";
     }
 
-    // 3. Gambar Default jika kosong
-    return "https://via.placeholder.com/150?text=No+Image";
+    // 2. Jika string dimulai dengan "http", berarti ini link dari Seeder/Internet
+    if (url.startsWith('http')) {
+      return url;
+    }
+
+    // 3. Jika tidak, berarti ini Path Upload (contoh: "posters/file.jpg")
+    // Kita harus tambahkan URL backend di depannya
+    return `http://localhost:8000/storage/${url}`;
   };
 
   // Logic Tanggal

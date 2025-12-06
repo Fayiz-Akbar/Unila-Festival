@@ -1,4 +1,3 @@
-// Frontend/src/components/Common/CardAcara.jsx
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext'; 
@@ -7,36 +6,47 @@ const CardAcara = ({ acara }) => {
   const { user } = useAuth(); 
   const navigate = useNavigate();
 
+  // --- Helper: Format Tanggal ---
   const formatDate = (dateString) => {
     if (!dateString) return '-';
     const options = { day: 'numeric', month: 'long', year: 'numeric' };
     return new Date(dateString).toLocaleDateString('id-ID', options);
   };
 
+  // --- Helper: Potong Teks Deskripsi ---
   const truncateText = (text, maxLength) => {
     if (!text) return '';
     return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
   };
 
-  const imageUrl = acara.poster_url 
-    ? (acara.poster_url.startsWith('http') ? acara.poster_url : `http://127.0.0.1:8000/storage/${acara.poster_url}`) 
-    : 'https://via.placeholder.com/400x300?text=No+Poster';
+  // --- LOGIKA BARU PENENTU GAMBAR ---
+  const getImageUrl = (item) => {
+    // Ambil value dari kolom poster_url (satu-satunya kolom gambar di DB)
+    const url = item.poster_url;
 
-  // --- LOGIKA UTAMA ---
-  const handleDetailClick = () => {
-    if (!user) {
-      // Jika Guest: Tampilkan Konfirmasi Login
-      if (window.confirm("Anda harus login untuk melihat detail acara ini. Login sekarang?")) {
-        navigate('/login');
-      }
-    } else {
-      // Jika User: Lanjut ke Detail
-      navigate(`/acara/${acara.slug}`);
+    // 1. Jika kosong/null, pakai placeholder
+    if (!url) {
+      return 'https://via.placeholder.com/400x300?text=No+Poster';
     }
+
+    // 2. Jika string dimulai dengan "http", berarti ini link dari Seeder/Internet
+    if (url.startsWith('http')) {
+      return url;
+    }
+
+    // 3. Jika tidak, berarti ini Path Upload (contoh: "posters/file.jpg")
+    // Kita harus tambahkan URL backend di depannya
+    return `http://localhost:8000/storage/${url}`;
+  };
+
+  const imageUrl = getImageUrl(acara);
+
+  // --- Logic Klik Card ---
+  const handleDetailClick = () => {
+    navigate(`/acara/${acara.slug}`);
   };
 
   return (
-    // Ubah dari Link ke div, dan pasang onClick di sini
     <div 
         onClick={handleDetailClick}
         className="group bg-white rounded-xl shadow-sm hover:shadow-md border border-gray-100 overflow-hidden transition-all duration-300 flex flex-col h-full cursor-pointer"
@@ -47,7 +57,10 @@ const CardAcara = ({ acara }) => {
           src={imageUrl}
           alt={acara.judul}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          onError={(e) => {e.target.src = 'https://via.placeholder.com/400x200?text=Image+Error'}}
+          onError={(e) => {
+            e.target.onerror = null; 
+            e.target.src = 'https://via.placeholder.com/400x200?text=Image+Error';
+          }}
         />
         <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-[#0B1221] shadow-sm">
           {acara.kategori?.nama_kategori || 'Event'}
@@ -80,7 +93,6 @@ const CardAcara = ({ acara }) => {
              <span className="truncate max-w-[100px]">{acara.lokasi || 'Online'}</span>
           </div>
           
-          {/* Tombol Detail (Hanya visual, klik ditangani div utama) */}
           <span className="text-sm font-medium text-blue-600 hover:text-blue-800 flex items-center transition-colors">
             Detail
             <svg className="w-4 h-4 ml-1 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
