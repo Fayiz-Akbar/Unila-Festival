@@ -113,7 +113,7 @@ const Navbar = () => {
                        <div className="text-right hidden lg:block">
                           <p className="text-sm font-bold text-white leading-none group-hover:text-[#FF7F3E] transition">{user.nama}</p>
                           <p className="text-[10px] text-gray-400 uppercase tracking-wide mt-1">
-                              {isAdmin ? 'Administrator' : (isPenyelenggara ? 'Penyelenggara' : 'Mahasiswa')}
+                              {isAdmin ? 'Administrator' : (isPenyelenggara ? 'Penyelenggara' : 'User')}
                           </p>
                        </div>
                        <div className="h-9 w-9 rounded-full bg-white/10 text-white flex items-center justify-center font-bold text-sm border border-white/20 shadow-sm group-hover:border-[#FF7F3E] transition backdrop-blur-sm overflow-hidden">
