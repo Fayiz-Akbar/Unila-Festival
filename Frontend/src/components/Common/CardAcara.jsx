@@ -31,7 +31,6 @@ const CardAcara = ({ acara }) => {
 
   const handleBookmarkClick = async (e) => {
     e.stopPropagation(); // Prevent card click
-    console.log('BOOKMARK CLICKED!', acara.id);
     
     if (!user) {
       if (window.confirm("Anda harus login untuk menyimpan event. Login sekarang?")) {
@@ -74,6 +73,12 @@ const CardAcara = ({ acara }) => {
 
   // --- LOGIKA UTAMA ---
   const handleDetailClick = () => {
+    if (!acara || !acara.slug) {
+      console.error('CardAcara: Acara tidak memiliki slug', acara);
+      alert('Event tidak valid');
+      return;
+    }
+    
     if (!user) {
       // Jika Guest: Tampilkan Konfirmasi Login
       if (window.confirm("Anda harus login untuk melihat detail acara ini. Login sekarang?")) {
@@ -85,29 +90,51 @@ const CardAcara = ({ acara }) => {
     }
   };
 
-  console.log('CardAcara rendered - NEW VERSION', acara.id);
+  // Null check
+  if (!acara) {
+    console.error('CardAcara: acara is null or undefined');
+    return null;
+  }
 
   return (
-    // Ubah dari Link ke div, dan pasang onClick di sini
     <div 
-        onClick={handleDetailClick}
-        className="group bg-white rounded-xl shadow-sm hover:shadow-md border border-gray-100 overflow-hidden transition-all duration-300 flex flex-col h-full cursor-pointer"
+        className="group bg-white rounded-xl shadow-sm hover:shadow-md border border-gray-100 overflow-hidden transition-all duration-300 flex flex-col h-full"
     >
       {/* Bagian Gambar */}
       <div className="relative h-48 w-full overflow-hidden bg-gray-200">
         <img
           src={imageUrl}
           alt={acara.judul}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 pointer-events-none"
           onError={(e) => {e.target.src = 'https://via.placeholder.com/400x200?text=Image+Error'}}
         />
-        <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-[#0B1221] shadow-sm">
+        
+        {/* Kategori Badge */}
+        <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-[#0B1221] shadow-sm pointer-events-none">
           {acara.kategori?.nama_kategori || 'Event'}
         </div>
+
+        {/* Tombol Bookmark/Simpan */}
+        <button
+          onClick={handleBookmarkClick}
+          disabled={isLoadingBookmark}
+          className="absolute top-3 left-3 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md hover:bg-white transition-all disabled:opacity-50 z-10"
+          title={isSaved ? 'Hapus dari simpanan' : 'Simpan event'}
+        >
+          <svg 
+            className="w-5 h-5 text-red-500" 
+            fill={isSaved ? 'currentColor' : 'none'} 
+            stroke="currentColor" 
+            strokeWidth="2" 
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
+          </svg>
+        </button>
       </div>
 
       {/* Bagian Konten */}
-      <div className="p-5 flex flex-col flex-grow">
+      <div className="p-5 flex flex-col flex-grow pointer-events-none">
         <div className="flex items-center text-xs text-gray-500 mb-2 space-x-2">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -115,7 +142,7 @@ const CardAcara = ({ acara }) => {
           <span>{formatDate(acara.waktu_mulai)}</span>
         </div>
 
-        <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2 leading-tight group-hover:text-blue-600 transition-colors">
+        <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2 leading-tight transition-colors">
           {acara.judul}
         </h3>
 
@@ -123,36 +150,26 @@ const CardAcara = ({ acara }) => {
           {truncateText(acara.deskripsi, 100)}
         </p>
 
-        <div className="mt-auto pt-4 border-t border-gray-100 flex items-center justify-between">
-          <div className="flex items-center gap-3 text-xs text-gray-500">
+        <div className="mt-auto pt-4 border-t border-gray-100 flex items-center justify-between pointer-events-auto">
+          <div className="flex items-center gap-2 text-xs text-gray-500">
             {/* Icon Lokasi */}
             <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
-            <span className="truncate max-w-[120px]">{acara.lokasi || 'Online'}</span>
-            
-            {/* TEST - Tombol Bookmark */}
-            <button
-              onClick={handleBookmarkClick}
-              disabled={isLoadingBookmark}
-              className="flex items-center gap-1 px-2 py-1 bg-gray-100 hover:bg-orange-50 rounded transition-all disabled:opacity-50"
-              title={isSaved ? 'Hapus dari simpanan' : 'Simpan event'}
-            >
-              <svg className={`w-4 h-4 ${isSaved ? 'text-[#FF7F3E]' : 'text-gray-500'}`} fill={isSaved ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
-              </svg>
-              <span className="text-gray-700 font-medium">Simpan</span>
-            </button>
+            <span className="truncate max-w-[150px]">{acara.lokasi || 'Online'}</span>
           </div>
           
-          {/* Tombol Detail (Hanya visual, klik ditangani div utama) */}
-          <span className="text-sm font-medium text-blue-600 hover:text-blue-800 flex items-center transition-colors">
+          {/* Tombol Detail */}
+          <button
+            onClick={handleDetailClick}
+            className="text-sm font-medium text-blue-600 hover:text-blue-800 flex items-center transition-colors"
+          >
             Detail
             <svg className="w-4 h-4 ml-1 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
             </svg>
-          </span>
+          </button>
         </div>
       </div>
     </div>

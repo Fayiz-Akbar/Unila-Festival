@@ -1,6 +1,5 @@
 // Frontend/src/pages/EventTersimpanPage.jsx
 import React, { useState, useEffect } from 'react';
-import Layout from '../components/Common/Layout';
 import CardAcara from '../components/Common/CardAcara';
 import eventTersimpanApi from '../api/eventTersimpanApi';
 import { useAuth } from '../context/AuthContext';
@@ -24,8 +23,10 @@ export default function EventTersimpanPage() {
   const fetchEventTersimpan = async () => {
     try {
       setLoading(true);
+      setError(null);
       const response = await eventTersimpanApi.getEventTersimpan();
-      setEvents(response.data.data || []);
+      const eventsData = response.data.data || [];
+      setEvents(eventsData);
     } catch (err) {
       console.error('Error fetching saved events:', err);
       setError('Gagal memuat event tersimpan');
@@ -35,15 +36,14 @@ export default function EventTersimpanPage() {
   };
 
   return (
-    <Layout>
-      <div className="min-h-screen bg-gray-50 pt-24 pb-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 pt-24 pb-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          <div className="mb-10">
+            <h1 className="text-3xl font-bold text-[#1a1a2e] border-b-4 border-[#FF7F3E] pb-1 inline-block">
               Event Tersimpan
             </h1>
-            <p className="text-gray-600">
+            <p className="text-gray-600 mt-3">
               Kumpulan event yang Anda simpan untuk diikuti nanti
             </p>
           </div>
@@ -85,14 +85,13 @@ export default function EventTersimpanPage() {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {events.map((event) => (
                 <CardAcara key={event.id} acara={event} />
               ))}
             </div>
           )}
-        </div>
       </div>
-    </Layout>
+    </div>
   );
 }
