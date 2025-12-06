@@ -3,36 +3,37 @@
 
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import axiosClient from '../../api/axiosClient';
 
 // Komponen helper untuk NavLink agar bisa mendeteksi 'active'
 const StyledNavLink = ({ to, children }) => (
-  <NavLink
-    to={to}
-    className={({ isActive }) =>
-      `block rounded-md px-4 py-3 text-sm transition-colors duration-150 ${
-        isActive
-          ? 'bg-primary-hover/50 text-white shadow-inner font-bold' // Aktif: Warna Amber redup + Teks Putih
-          : 'text-gray-300 hover:bg-secondary/70' // Tidak aktif: Abu-abu muda + Hover gelap
-      }`
-    }
-  >
+  <NavLink
+    to={to}
+    className={({ isActive }) =>
+      `block rounded-md px-4 py-3 text-sm transition-colors duration-150 ${
+        isActive
+          ? 'bg-primary-hover/50 text-white shadow-inner font-bold' // Aktif: Warna Amber redup + Teks Putih
+          : 'text-gray-300 hover:bg-secondary/70' // Tidak aktif: Abu-abu muda + Hover gelap
+      }`
+    }
+  >
     {children}
   </NavLink>
 );
 
 export default function AdminLayout() {
-  const { user, clearAuthData } = useAuth();
+  // Mengambil fungsi 'logout' langsung dari AuthContext agar konsisten
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
     try {
-      await axiosClient.post('/logout');
+        // Panggil fungsi logout dari context (ini akan hapus token & state user)
+        await logout(); 
     } catch (e) {
-      console.error('Gagal logout di backend:', e);
+        console.error('Logout error:', e);
     } finally {
-      clearAuthData();
-      navigate('/login');
+        // Apapun yang terjadi, paksa redirect ke login
+        navigate('/login', { replace: true });
     }
   };
 
@@ -40,7 +41,7 @@ export default function AdminLayout() {
     // Latar belakang utama (Bg konten) lebih terang
     <div className="flex h-screen bg-gray-100">
       
-      {/* Sidebar Navigasi (Warna Secondary: Dark Slate) */}
+      {/* Sidebar Navigasi (Warna Secondary: Dark Slate sesuai tema Anda) */}
       <aside className="w-64 flex-shrink-0 bg-secondary shadow-2xl border-r border-primary/20">
         <div className="flex h-full flex-col p-6">
           {/* Logo & User */}
@@ -60,6 +61,10 @@ export default function AdminLayout() {
             </StyledNavLink>
             <StyledNavLink to="/admin/kategori">
                Manajemen Kategori
+            </StyledNavLink>
+             {/* --- BAGIAN BARU: Manajemen Acara --- */}
+            <StyledNavLink to="/admin/manajemen-acara">
+               Manajemen Acara
             </StyledNavLink>
             <StyledNavLink to="/admin/validasi-penyelenggara">
                Validasi Penyelenggara

@@ -31,6 +31,7 @@ import AdminDashboardPage from './pages/Admin/AdminDashboardPage.jsx';
 import AdminKategoriPage from './pages/Admin/AdminKategoriPage.jsx';
 import AdminValidasiPenyelenggaraPage from './pages/Admin/AdminValidasiPenyelenggaraPage.jsx';
 import AdminValidasiAcaraPage from './pages/Admin/AdminValidasiAcaraPage.jsx';
+import AdminManajemenAcaraPage from './pages/Admin/AdminManajemenAcaraPage.jsx';
 
 const router = createBrowserRouter([
   {
@@ -76,6 +77,7 @@ const router = createBrowserRouter([
               { path: 'kategori', element: <AdminKategoriPage /> },
               { path: 'validasi-penyelenggara', element: <AdminValidasiPenyelenggaraPage /> },
               { path: 'validasi-acara', element: <AdminValidasiAcaraPage /> },
+              { path: 'manajemen-acara', element: <AdminManajemenAcaraPage /> },
             ]
           }
         ]
