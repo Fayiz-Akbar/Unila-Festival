@@ -1,31 +1,19 @@
-// Frontend/src/pages/Admin/AdminValidasiAcaraPage.jsx
-
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import axiosClient from '../../api/axiosClient';
-import { format } from 'date-fns';
+import Swal from 'sweetalert2'; // Pastikan sudah install: npm install sweetalert2
 
 export default function AdminValidasiAcaraPage() {
     const [submissions, setSubmissions] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [modal, setModal] = useState({
-        isOpen: false,
-        id: null,
-        status: null, // 'Published' or 'Rejected'
-        catatan: '',
-        acaraJudul: '',
-    });
 
     const fetchSubmissions = async () => {
         setLoading(true);
         try {
-            // GET /api/admin/validasi/acara
             const response = await axiosClient.get('/admin/validasi/acara');
             setSubmissions(response.data);
-            setError(null);
         } catch (err) {
             console.error("Fetch Error:", err);
-            setError('Gagal mengambil data pengajuan acara. Pastikan Backend berjalan.');
+            Swal.fire("Error", "Gagal mengambil data pengajuan.", "error");
         } finally {
             setLoading(false);
         }
@@ -35,184 +23,249 @@ export default function AdminValidasiAcaraPage() {
         fetchSubmissions();
     }, []);
 
-    const openModal = (submission, status) => {
-        setModal({
-            isOpen: true,
-            id: submission.id,
-            status: status,
-            catatan: '',
-            acaraJudul: submission.judul,
+    // --- Helper: Get Poster URL (Sama seperti di CardAcara/Manajemen) ---
+    const getPosterUrl = (acara) => {
+        const url = acara.poster_url;
+        if (!url) return null;
+        if (url.startsWith('http')) return url;
+        return `http://localhost:8000/storage/${url}`;
+    };
+
+    // --- Helper: Format Date ---
+    const formatDate = (dateString) => {
+        if (!dateString) return '-';
+        return new Date(dateString).toLocaleDateString('id-ID', {
+            day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
         });
     };
 
-    const closeModal = () => {
-        setModal({ isOpen: false, id: null, status: null, catatan: '', acaraJudul: '' });
-        setError(null); 
+    // --- ACTION 1: Lihat Poster ---
+    const handleViewPoster = (acara) => {
+        const url = getPosterUrl(acara);
+        if (!url) {
+            Swal.fire("Info", "Acara ini tidak memiliki poster.", "info");
+            return;
+        }
+
+        Swal.fire({
+            title: acara.judul,
+            text: 'Poster Acara',
+            imageUrl: url,
+            imageAlt: 'Poster Acara',
+            imageHeight: 500, // Tinggi gambar agar proporsional
+            width: 600,
+            showCloseButton: true,
+            showConfirmButton: false // Hanya tombol close X
+        });
     };
 
-    const handleValidation = async (e) => {
-        e.preventDefault();
-        setError(null);
-        
-        try {
-            // POST /api/admin/validasi/acara/{id}
-            await axiosClient.post(`/admin/validasi/acara/${modal.id}`, {
-                status: modal.status,
-                catatan_admin_acara: modal.catatan.trim(),
-            });
+    // --- ACTION 2: Lihat Detail Lengkap ---
+    const handleViewDetail = (acara) => {
+        Swal.fire({
+            title: `<h3 class="text-xl font-bold text-gray-800">${acara.judul}</h3>`,
+            html: `
+                <div class="text-left text-sm space-y-3 mt-4">
+                    <p><strong> Kategori:</strong> ${acara.kategori?.nama_kategori || '-'}</p>
+                    <p><strong> Penyelenggara:</strong> ${acara.penyelenggara?.nama_penyelenggara || '-'}</p>
+                    <p><strong> Pengaju:</strong> ${acara.pengaju?.nama || '-'}</p>
+                    <hr class="border-gray-200" />
+                    <p><strong> Lokasi:</strong> ${acara.lokasi}</p>
+                    <p><strong> Mulai:</strong> ${formatDate(acara.waktu_mulai)}</p>
+                    <p><strong> Selesai:</strong> ${formatDate(acara.waktu_selesai)}</p>
+                    <hr class="border-gray-200" />
+                    <div class="bg-gray-50 p-3 rounded border border-gray-100">
+                        <strong class="block mb-1 text-gray-600"> Deskripsi:</strong>
+                        <p class="whitespace-pre-line text-gray-700">${acara.deskripsi}</p>
+                    </div>
+                     ${acara.link_pendaftaran ? `<p class="mt-2 text-blue-600"><a href="${acara.link_pendaftaran}" target="_blank">🔗 Link Pendaftaran</a></p>` : ''}
+                </div>
+            `,
+            width: 700,
+            showCloseButton: true,
+            confirmButtonText: 'Tutup',
+            confirmButtonColor: '#3085d6',
+        });
+    };
 
-            closeModal();
-            fetchSubmissions();
-        } catch (err) {
-            console.error("Validation Error:", err);
-            const msg = err.response?.data?.message || 'Gagal menyimpan validasi. Coba lagi.';
-            setError(msg);
+    // --- ACTION 3: PUBLISH (Tanpa Komentar) ---
+    const handlePublish = async (id) => {
+        const result = await Swal.fire({
+            title: 'Publikasikan Acara?',
+            text: "Acara akan langsung tayang di halaman publik.",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#10b981', // Hijau
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Ya, Publikasikan!',
+            cancelButtonText: 'Batal'
+        });
+
+        if (result.isConfirmed) {
+            try {
+                // Kirim ke backend status Published
+                await axiosClient.post(`/admin/validasi/acara/${id}`, {
+                    status: 'Published',
+                    catatan_admin_acara: null // Tidak perlu catatan
+                });
+                
+                Swal.fire('Terpublikasi!', 'Acara berhasil ditayangkan.', 'success');
+                fetchSubmissions(); // Refresh tabel
+            } catch (error) {
+                console.error(error);
+                Swal.fire('Gagal', 'Terjadi kesalahan saat memproses data.', 'error');
+            }
         }
     };
-    
-    // Helper untuk format waktu
-    const formatDateTime = (dateTime) => {
-        // Menggunakan date-fns format 'dd MMM yyyy, HH:mm'
-        return dateTime ? format(new Date(dateTime), 'dd MMM yyyy, HH:mm') : '-';
+
+    // --- ACTION 4: REJECT (Wajib Alasan) ---
+    const handleReject = async (id) => {
+        const { value: text } = await Swal.fire({
+            title: 'Tolak Pengajuan?',
+            input: 'textarea',
+            inputLabel: 'Alasan Penolakan (Wajib)',
+            inputPlaceholder: 'Jelaskan kenapa acara ini ditolak (misal: Poster buram, data kurang)...',
+            inputAttributes: {
+                'aria-label': 'Tulis alasan penolakan di sini'
+            },
+            showCancelButton: true,
+            confirmButtonText: 'Tolak Permanen',
+            confirmButtonColor: '#ef4444', // Merah
+            cancelButtonText: 'Batal',
+            inputValidator: (value) => {
+                if (!value) {
+                    return 'Anda harus menuliskan alasan penolakan!';
+                }
+            }
+        });
+
+        if (text) {
+            try {
+                // Kirim ke backend status Rejected + Catatan
+                await axiosClient.post(`/admin/validasi/acara/${id}`, {
+                    status: 'Rejected',
+                    catatan_admin_acara: text // Alasan dari input textarea
+                });
+
+                Swal.fire('Ditolak', 'Acara telah ditolak dan alasan tersimpan.', 'success');
+                fetchSubmissions();
+            } catch (error) {
+                console.error(error);
+                Swal.fire('Gagal', 'Terjadi kesalahan saat menolak data.', 'error');
+            }
+        }
     };
 
-
-    // --- JSX Component (Modal) ---
-    const ModalValidation = () => {
-        if (!modal.isOpen) return null;
-
-        const isPublished = modal.status === 'Published';
-        const title = isPublished ? 'Publikasikan Acara' : 'Tolak Acara';
-        const buttonText = isPublished ? 'Publikasikan' : 'Tolak Permanen';
-        const buttonColor = isPublished ? 'bg-primary hover:bg-primary-hover focus:ring-primary' : 'bg-red-600 hover:bg-red-700 focus:ring-red-500';
-        const inputBorder = isPublished ? 'focus:border-primary focus:ring-primary' : 'focus:border-red-500 focus:ring-red-500';
-        const requiredNote = !isPublished;
-
-        return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-70">
-                <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl">
-                    <h3 className={`text-2xl font-bold ${isPublished ? 'text-primary' : 'text-red-600'} mb-4`}>
-                        {title}
-                    </h3>
-                    <p className="text-gray-600 mb-4">
-                        Anda akan memproses acara **{modal.acaraJudul}**. Acara berstatus 'Published' akan tampil di portal utama.
-                    </p>
-
-                    <form onSubmit={handleValidation}>
-                        <div className="mb-4">
-                            <label className="mb-2 block text-sm font-medium text-gray-700">
-                                Catatan Admin {requiredNote && <span className="text-red-500">*</span>}
-                            </label>
-                            <textarea
-                                rows="3"
-                                value={modal.catatan}
-                                onChange={(e) => setModal({ ...modal, catatan: e.target.value })}
-                                required={requiredNote}
-                                className={`block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:outline-none focus:ring-1 ${inputBorder} sm:text-sm`}
-                                placeholder={isPublished ? "Opsional: Cek terakhir sebelum tayang." : "Wajib: Jelaskan alasan penolakan (misal: Poster tidak jelas, informasi kurang lengkap)."}
-                            />
-                        </div>
-
-                        {error && (
-                            <div className="mb-4 rounded-md bg-red-50 p-3 text-sm font-medium text-red-800">
-                                {error}
-                            </div>
-                        )}
-
-                        <div className="flex justify-end space-x-3">
-                            <button
-                                type="button"
-                                onClick={closeModal}
-                                className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 transition-colors"
-                            >
-                                Batal
-                            </button>
-                            <button
-                                type="submit"
-                                className={`rounded-lg px-4 py-2 text-sm font-medium text-white shadow-md transition-colors ${buttonColor}`}
-                            >
-                                {buttonText}
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        );
-    };
-    // --- END Modal Component ---
+    if (loading) return <div className="p-8 text-center text-gray-500">Memuat data pengajuan...</div>;
 
     return (
         <div className="mx-auto max-w-7xl">
-            <h1 className="text-3xl font-bold text-secondary">
-                Validasi Pengajuan Acara
-            </h1>
-            <p className="mt-1 text-gray-500 mb-6">
-                Tinjau kelengkapan dan kelayakan acara yang diajukan. Hanya acara berstatus 'Published' yang tampil di portal publik. Total: {submissions.length} Pending.
-            </p>
+            <div className="flex flex-col sm:flex-row justify-between items-end mb-6">
+                <div>
+                    <h1 className="text-3xl font-bold text-gray-800">
+                        Validasi Pengajuan Acara
+                    </h1>
+                    <p className="mt-1 text-gray-500">
+                        Tinjau acara masuk. 'Publish' untuk menayangkan, 'Reject' untuk mengembalikan ke penyelenggara.
+                    </p>
+                </div>
+                <div className="bg-blue-50 text-blue-800 px-4 py-2 rounded-lg text-sm font-medium">
+                    Pending: {submissions.length}
+                </div>
+            </div>
             
             {submissions.length === 0 ? (
-                <div className="rounded-lg bg-green-50 p-6 text-center shadow-xl border-t-4 border-green-500">
-                    <p className="text-lg font-semibold text-green-800">Semua pengajuan acara telah diverifikasi. Tidak ada data pending saat ini.</p>
+                <div className="rounded-xl bg-white p-12 text-center shadow-sm border border-gray-200">
+                    <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100 mb-4">
+                        <i className="fa-solid fa-check text-2xl text-green-600"></i>
+                    </div>
+                    <h3 className="text-lg font-medium text-gray-900">Semua Bersih!</h3>
+                    <p className="mt-1 text-gray-500">Tidak ada pengajuan acara baru saat ini.</p>
                 </div>
             ) : (
-                <div className="overflow-x-auto rounded-lg bg-white shadow-xl">
+                <div className="overflow-hidden rounded-xl bg-white shadow-sm border border-gray-200">
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-secondary">
-                                    Acara & Kategori
+                                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-gray-500">
+                                    Info Acara
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-secondary">
-                                    Penyelenggara
+                                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-gray-500">
+                                    Waktu & Lokasi
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-secondary">
-                                    Waktu
-                                </th>
-                                <th className="px-6 py-3 text-right text-xs font-bold uppercase tracking-wider text-secondary">
-                                    Aksi
+                                <th className="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider text-gray-500 w-1/4">
+                                    Aksi Cepat
                                 </th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200 bg-white">
                             {submissions.map((acara) => (
                                 <tr key={acara.id} className="hover:bg-gray-50 transition-colors">
-                                    <td className="px-6 py-4 text-sm font-medium text-secondary">
-                                        <div className="font-bold">{acara.judul}</div>
-                                        <span className="text-xs font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
-                                            {acara.kategori?.nama_kategori || 'Tanpa Kategori'}
-                                        </span>
-                                        <div className="mt-2 text-xs text-gray-500">
-                                            {/* Link ke detail Acara opsional di masa depan */}
-                                            <a href="#" className="text-blue-500 hover:text-blue-700 font-medium mr-2">
-                                                Cek Detail Event
-                                            </a>
+                                    {/* Kolom 1: Judul, Kategori, Penyelenggara */}
+                                    <td className="px-6 py-4">
+                                        <div className="flex flex-col">
+                                            <span className="font-bold text-gray-900 text-base mb-1">{acara.judul}</span>
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                                    {acara.kategori?.nama_kategori || 'Umum'}
+                                                </span>
+                                                <span className="text-xs text-gray-500">
+                                                    oleh {acara.penyelenggara?.nama_penyelenggara}
+                                                </span>
+                                            </div>
+                                            
+                                            {/* Tombol Detail & Poster */}
+                                            <div className="flex gap-3 text-sm mt-1">
+                                                <button 
+                                                    onClick={() => handleViewDetail(acara)}
+                                                    className="text-blue-600 hover:text-blue-800 font-medium hover:underline flex items-center"
+                                                >
+                                                    <i className="fa-regular fa-eye mr-1"></i> Cek Detail
+                                                </button>
+                                                <button 
+                                                    onClick={() => handleViewPoster(acara)}
+                                                    className="text-pink-600 hover:text-pink-800 font-medium hover:underline flex items-center"
+                                                >
+                                                    <i className="fa-regular fa-image mr-1"></i> Cek Poster
+                                                </button>
+                                            </div>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 text-sm text-gray-500">
-                                        <div className="font-medium text-gray-900">{acara.penyelenggara.nama_penyelenggara}</div>
-                                        <div className="text-xs">Diajukan oleh: {acara.pengaju.nama}</div>
+
+                                    {/* Kolom 2: Waktu */}
+                                    <td className="px-6 py-4 text-sm text-gray-600">
+                                        <div className="flex flex-col gap-1">
+                                            <div className="flex items-center">
+                                                <i className="fa-regular fa-calendar w-5 text-center mr-2 text-gray-400"></i>
+                                                <span>{formatDate(acara.waktu_mulai)}</span>
+                                            </div>
+                                            <div className="flex items-center">
+                                                <i className="fa-solid fa-location-dot w-5 text-center mr-2 text-gray-400"></i>
+                                                <span className="truncate max-w-[150px]" title={acara.lokasi}>
+                                                    {acara.lokasi}
+                                                </span>
+                                            </div>
+                                        </div>
                                     </td>
-                                    <td className="whitespace-nowrap px-6 py-4 text-xs text-gray-500">
-                                        <div className="font-medium">Mulai: {formatDateTime(acara.waktu_mulai)}</div>
-                                        <div className="font-medium">Selesai: {formatDateTime(acara.waktu_selesai)}</div>
-                                    </td>
-                                    <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
-                                        {/* Tautan ke poster */}
-                                        <a href={acara.poster_url || '#'} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-700 mr-3">
-                                            Cek Poster
-                                        </a>
-                                        <button
-                                            onClick={() => openModal(acara, 'Published')}
-                                            className="rounded-md bg-primary px-3 py-1.5 text-white shadow-sm hover:bg-primary-hover mr-3 transition-colors"
-                                        >
-                                            Publish
-                                        </button>
-                                        <button
-                                            onClick={() => openModal(acara, 'Rejected')}
-                                            className="rounded-md bg-red-500 px-3 py-1.5 text-white shadow-sm hover:bg-red-600 transition-colors"
-                                        >
-                                            Reject
-                                        </button>
+
+                                    {/* Kolom 3: Tombol Aksi */}
+                                    <td className="px-6 py-4 text-center align-middle">
+                                        <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
+                                            <button
+                                                onClick={() => handlePublish(acara.id)}
+                                                className="inline-flex justify-center items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition shadow-sm w-full sm:w-auto"
+                                                title="Langsung tayangkan"
+                                            >
+                                                <i className="fa-solid fa-check mr-2"></i> Publish
+                                            </button>
+                                            
+                                            <button
+                                                onClick={() => handleReject(acara.id)}
+                                                className="inline-flex justify-center items-center px-4 py-2 bg-white border border-red-300 text-red-600 hover:bg-red-50 text-sm font-medium rounded-lg transition shadow-sm w-full sm:w-auto"
+                                                title="Tolak dan beri alasan"
+                                            >
+                                                <i className="fa-solid fa-xmark mr-2"></i> Reject
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
@@ -220,8 +273,6 @@ export default function AdminValidasiAcaraPage() {
                     </table>
                 </div>
             )}
-            
-            <ModalValidation />
         </div>
     );
 }

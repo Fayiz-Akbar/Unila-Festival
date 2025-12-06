@@ -1,31 +1,21 @@
-// Frontend/src/pages/Admin/AdminValidasiPenyelenggaraPage.jsx
-
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import axiosClient from '../../api/axiosClient';
+import Swal from 'sweetalert2';
 import { format } from 'date-fns';
 
 export default function AdminValidasiPenyelenggaraPage() {
     const [submissions, setSubmissions] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [modal, setModal] = useState({
-        isOpen: false,
-        id: null,
-        status: null, // 'Approved' or 'Rejected'
-        catatan: '',
-        penyelenggaraNama: '',
-    });
 
+    // --- 1. Fetch Data ---
     const fetchSubmissions = async () => {
         setLoading(true);
         try {
-            // GET /api/admin/validasi/penyelenggara
             const response = await axiosClient.get('/admin/validasi/penyelenggara');
             setSubmissions(response.data);
-            setError(null);
         } catch (err) {
             console.error("Fetch Error:", err);
-            setError('Gagal mengambil data pengajuan. Pastikan Backend berjalan.');
+            Swal.fire("Error", "Gagal mengambil data pengajuan.", "error");
         } finally {
             setLoading(false);
         }
@@ -35,134 +25,177 @@ export default function AdminValidasiPenyelenggaraPage() {
         fetchSubmissions();
     }, []);
 
-    const openModal = (submission, status) => {
-        setModal({
-            isOpen: true,
-            id: submission.id,
-            status: status,
-            catatan: '',
-            penyelenggaraNama: submission.penyelenggara.nama_penyelenggara,
-            id_pengguna: submission.pengguna.nama, // Tambahkan nama pengguna
+    // --- 2. Helper Functions ---
+    
+    // Logic URL Cerdas (untuk Logo/Dokumen)
+    const getAssetUrl = (path) => {
+        if (!path) return null;
+        if (path.startsWith('http')) return path;
+        return `http://localhost:8000/storage/${path}`;
+    };
+
+    const formatDateTime = (dateTime) => {
+        return dateTime ? format(new Date(dateTime), 'dd MMM yyyy, HH:mm') : '-';
+    };
+
+    // --- 3. Action Handlers ---
+
+    // Lihat Detail (Modal)
+    const handleViewDetail = (item) => {
+        const logoUrl = getAssetUrl(item.penyelenggara.logo_url);
+        const docUrl = getAssetUrl(item.penyelenggara.dokumen_validasi_url);
+
+        Swal.fire({
+            title: `<h3 class="text-xl font-bold text-gray-800">${item.penyelenggara.nama_penyelenggara}</h3>`,
+            html: `
+                <div class="text-left text-sm space-y-4 mt-4">
+                    
+                    ${logoUrl ? `
+                        <div class="flex justify-center mb-4">
+                            <img src="${logoUrl}" alt="Logo" class="h-24 w-24 object-contain rounded-full border border-gray-200 shadow-sm">
+                        </div>
+                    ` : ''}
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <span class="block text-xs text-gray-500 uppercase">Tipe Organisasi</span>
+                            <span class="font-medium text-gray-900">${item.penyelenggara.tipe}</span>
+                        </div>
+                        <div>
+                             <span class="block text-xs text-gray-500 uppercase">Diajukan Oleh</span>
+                             <span class="font-medium text-gray-900">${item.pengguna.nama}</span>
+                             <div class="text-xs text-blue-600">${item.pengguna.email}</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 p-3 rounded border border-gray-100">
+                        <strong class="block mb-1 text-gray-600 text-xs uppercase">Deskripsi Singkat</strong>
+                        <p class="text-gray-700 leading-relaxed">${item.penyelenggara.deskripsi_singkat || '-'}</p>
+                    </div>
+
+                    ${docUrl ? `
+                        <div class="mt-4 pt-3 border-t border-gray-100 text-center">
+                            <a href="${docUrl}" target="_blank" class="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium">
+                                <i class="fa-solid fa-file-pdf mr-2"></i> Lihat Dokumen Validasi (SK)
+                            </a>
+                        </div>
+                    ` : '<p class="text-center text-gray-400 italic text-xs mt-2">Tidak ada dokumen lampiran</p>'}
+                </div>
+            `,
+            width: 600,
+            showCloseButton: true,
+            confirmButtonText: 'Tutup',
+            confirmButtonColor: '#64748b',
         });
     };
 
-    const closeModal = () => {
-        setModal({ isOpen: false, id: null, status: null, catatan: '', penyelenggaraNama: '', id_pengguna: '' });
-        setError(null);
-    };
+    // Approve (Konfirmasi Saja)
+    const handleApprove = async (id) => {
+        const result = await Swal.fire({
+            title: 'Setujui Penyelenggara?',
+            text: "User akan mendapatkan hak akses sebagai penyelenggara.",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#10b981', // Hijau
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Ya, Setujui',
+            cancelButtonText: 'Batal'
+        });
 
-    const handleValidation = async (e) => {
-        e.preventDefault();
-        setError(null);
-        
-        try {
-            // POST /api/admin/validasi/penyelenggara/{id}
-            await axiosClient.post(`/admin/validasi/penyelenggara/${modal.id}`, {
-                status_tautan: modal.status,
-                catatan_admin: modal.catatan.trim(),
-            });
-
-            closeModal();
-            fetchSubmissions();
-        } catch (err) {
-            console.error("Validation Error:", err);
-            const msg = err.response?.data?.message || 'Gagal menyimpan validasi. Coba lagi.';
-            setError(msg);
+        if (result.isConfirmed) {
+            try {
+                await axiosClient.post(`/admin/validasi/penyelenggara/${id}`, {
+                    status_tautan: 'Approved',
+                    catatan_admin: null 
+                });
+                Swal.fire('Disetujui!', 'Penyelenggara berhasil diaktifkan.', 'success');
+                fetchSubmissions();
+            } catch (error) {
+                Swal.fire('Gagal', 'Terjadi kesalahan sistem.', 'error');
+            }
         }
     };
 
-    // --- JSX Component (Modal) ---
-    const ModalValidation = () => {
-        if (!modal.isOpen) return null;
+    // Reject (Wajib Alasan)
+    const handleReject = async (id) => {
+        const { value: text } = await Swal.fire({
+            title: 'Tolak Pengajuan?',
+            input: 'textarea',
+            inputLabel: 'Alasan Penolakan (Wajib)',
+            inputPlaceholder: 'Jelaskan alasan penolakan (misal: Dokumen SK buram, bukan organisasi valid)...',
+            inputAttributes: {
+                'aria-label': 'Tulis alasan penolakan'
+            },
+            showCancelButton: true,
+            confirmButtonText: 'Tolak Permanen',
+            confirmButtonColor: '#ef4444', // Merah
+            cancelButtonText: 'Batal',
+            inputValidator: (value) => {
+                if (!value) {
+                    return 'Anda harus menuliskan alasan penolakan!';
+                }
+            }
+        });
 
-        const isApproved = modal.status === 'Approved';
-        const title = isApproved ? 'Setujui Pengajuan' : 'Tolak Pengajuan';
-        const buttonText = isApproved ? 'Setujui' : 'Tolak Permanen';
-        const buttonColor = isApproved ? 'bg-primary hover:bg-primary-hover focus:ring-primary' : 'bg-red-600 hover:bg-red-700 focus:ring-red-500';
-        const inputBorder = isApproved ? 'focus:border-primary focus:ring-primary' : 'focus:border-red-500 focus:ring-red-500';
-        const requiredNote = !isApproved;
-
-        return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-70">
-                <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl">
-                    <h3 className={`text-2xl font-bold ${isApproved ? 'text-primary' : 'text-red-600'} mb-4`}>
-                        {title}
-                    </h3>
-                    <p className="text-gray-600 mb-4">
-                        Anda akan memproses pengajuan **{modal.penyelenggaraNama}** (Diajukan oleh **{modal.id_pengguna}**).
-                    </p>
-
-                    <form onSubmit={handleValidation}>
-                        <div className="mb-4">
-                            <label className="mb-2 block text-sm font-medium text-gray-700">
-                                Catatan Admin {requiredNote && <span className="text-red-500">*</span>}
-                            </label>
-                            <textarea
-                                rows="3"
-                                value={modal.catatan}
-                                onChange={(e) => setModal({ ...modal, catatan: e.target.value })}
-                                required={requiredNote}
-                                className={`block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:outline-none focus:ring-1 ${inputBorder} sm:text-sm`}
-                                placeholder={isApproved ? "Opsional: Beri selamat atau instruksi." : "Wajib: Jelaskan alasan penolakan."}
-                            />
-                        </div>
-
-                        {error && (
-                            <div className="mb-4 rounded-md bg-red-50 p-3 text-sm font-medium text-red-800">
-                                {error}
-                            </div>
-                        )}
-
-                        <div className="flex justify-end space-x-3">
-                            <button
-                                type="button"
-                                onClick={closeModal}
-                                className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 transition-colors"
-                            >
-                                Batal
-                            </button>
-                            <button
-                                type="submit"
-                                className={`rounded-lg px-4 py-2 text-sm font-medium text-white shadow-md transition-colors ${buttonColor}`}
-                            >
-                                {buttonText}
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        );
+        if (text) {
+            try {
+                await axiosClient.post(`/admin/validasi/penyelenggara/${id}`, {
+                    status_tautan: 'Rejected',
+                    catatan_admin: text
+                });
+                Swal.fire('Ditolak', 'Pengajuan ditolak dan alasan tersimpan.', 'success');
+                fetchSubmissions();
+            } catch (error) {
+                Swal.fire('Gagal', 'Terjadi kesalahan sistem.', 'error');
+            }
+        }
     };
-    // --- END Modal Component ---
+
+    // --- 4. Render UI ---
+
+    if (loading) return <div className="p-8 text-center text-gray-500">Memuat data pengajuan...</div>;
 
     return (
         <div className="mx-auto max-w-7xl">
-            <h1 className="text-3xl font-bold text-secondary">
-                Validasi Pengajuan Penyelenggara
-            </h1>
-            <p className="mt-1 text-gray-500 mb-6">
-                Tinjau dan setujui tautan antara Pengguna (User) dan Penyelenggara (HIMA/UKM). Total: {submissions.length} Pending.
-            </p>
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row justify-between items-end mb-6 gap-4">
+                <div>
+                    <h1 className="text-3xl font-bold text-gray-800">
+                        Validasi Penyelenggara
+                    </h1>
+                    <p className="mt-1 text-gray-500 text-sm">
+                        Verifikasi pengajuan hak akses penyelenggara (HIMA/UKM) dari user.
+                    </p>
+                </div>
+                <div className="bg-blue-50 text-blue-800 px-4 py-2 rounded-lg text-sm font-medium border border-blue-100">
+                    Pending: <span className="font-bold">{submissions.length}</span>
+                </div>
+            </div>
             
+            {/* Tabel */}
             {submissions.length === 0 ? (
-                <div className="rounded-lg bg-green-50 p-6 text-center shadow-xl border-t-4 border-green-500">
-                    <p className="text-lg font-semibold text-green-800">Semua pengajuan telah diverifikasi! Tidak ada data pending saat ini.</p>
+                <div className="rounded-xl bg-white p-12 text-center shadow-sm border border-gray-200">
+                    <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100 mb-4">
+                        <i className="fa-solid fa-check-double text-2xl text-green-600"></i>
+                    </div>
+                    <h3 className="text-lg font-medium text-gray-900">Semua Bersih!</h3>
+                    <p className="mt-1 text-gray-500">Tidak ada pengajuan penyelenggara baru.</p>
                 </div>
             ) : (
-                <div className="overflow-x-auto rounded-lg bg-white shadow-xl">
+                <div className="overflow-hidden rounded-xl bg-white shadow-sm border border-gray-200">
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-secondary">
-                                    Penyelenggara
+                                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-gray-500">
+                                    Organisasi / Penyelenggara
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-secondary">
-                                    Diajukan Oleh
+                                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-gray-500">
+                                    Pemohon (User)
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-bold uppercase tracking-wider text-secondary">
-                                    Tanggal Ajuan
+                                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-gray-500">
+                                    Tanggal Masuk
                                 </th>
-                                <th className="px-6 py-3 text-right text-xs font-bold uppercase tracking-wider text-secondary">
+                                <th className="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider text-gray-500">
                                     Aksi
                                 </th>
                             </tr>
@@ -170,30 +203,62 @@ export default function AdminValidasiPenyelenggaraPage() {
                         <tbody className="divide-y divide-gray-200 bg-white">
                             {submissions.map((sub) => (
                                 <tr key={sub.id} className="hover:bg-gray-50 transition-colors">
-                                    <td className="px-6 py-4 text-sm font-medium text-secondary">
-                                        <div className="font-bold">{sub.penyelenggara.nama_penyelenggara}</div>
-                                        <div className="text-xs text-gray-500">{sub.penyelenggara.deskripsi_singkat || '-'}</div>
+                                    
+                                    {/* Kolom 1: Penyelenggara */}
+                                    <td className="px-6 py-4">
+                                        <div className="flex items-center">
+                                            {/* Avatar Logo Kecil */}
+                                            <div className="h-10 w-10 flex-shrink-0 rounded-full bg-gray-100 border border-gray-200 overflow-hidden flex items-center justify-center text-gray-400">
+                                                {sub.penyelenggara.logo_url ? (
+                                                    <img src={getAssetUrl(sub.penyelenggara.logo_url)} alt="Logo" className="h-full w-full object-cover" />
+                                                ) : (
+                                                    <i className="fa-solid fa-building"></i>
+                                                )}
+                                            </div>
+                                            <div className="ml-4">
+                                                <div className="font-bold text-gray-900">{sub.penyelenggara.nama_penyelenggara}</div>
+                                                <div className="text-xs text-gray-500 mt-0.5">
+                                                    Tipe: <span className="font-medium text-gray-700">{sub.penyelenggara.tipe}</span>
+                                                </div>
+                                                <button 
+                                                    onClick={() => handleViewDetail(sub)}
+                                                    className="text-xs text-blue-600 hover:text-blue-800 hover:underline mt-1 flex items-center"
+                                                >
+                                                    <i className="fa-regular fa-eye mr-1"></i> Cek Detail & Dokumen
+                                                </button>
+                                            </div>
+                                        </div>
                                     </td>
-                                    <td className="px-6 py-4 text-sm text-gray-500">
-                                        <div className="font-medium text-gray-900">{sub.pengguna.nama}</div>
-                                        <div className="text-xs">{sub.pengguna.email}</div>
+
+                                    {/* Kolom 2: Pemohon */}
+                                    <td className="px-6 py-4">
+                                        <div className="text-sm font-medium text-gray-900">{sub.pengguna.nama}</div>
+                                        <div className="text-xs text-gray-500">{sub.pengguna.email}</div>
                                     </td>
-                                    <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                                        {format(new Date(sub.created_at), 'dd MMM yyyy, HH:mm')}
+
+                                    {/* Kolom 3: Tanggal */}
+                                    <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
+                                        {formatDateTime(sub.created_at)}
                                     </td>
-                                    <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
-                                        <button
-                                            onClick={() => openModal(sub, 'Approved')}
-                                            className="rounded-md bg-primary px-3 py-1.5 text-white shadow-sm hover:bg-primary-hover mr-3 transition-colors"
-                                        >
-                                            Approve
-                                        </button>
-                                        <button
-                                            onClick={() => openModal(sub, 'Rejected')}
-                                            className="rounded-md bg-red-500 px-3 py-1.5 text-white shadow-sm hover:bg-red-600 transition-colors"
-                                        >
-                                            Reject
-                                        </button>
+
+                                    {/* Kolom 4: Aksi */}
+                                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                                        <div className="flex justify-center gap-2">
+                                            <button
+                                                onClick={() => handleApprove(sub.id)}
+                                                className="inline-flex items-center px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded transition shadow-sm"
+                                                title="Setujui Pengajuan"
+                                            >
+                                                <i className="fa-solid fa-check mr-1.5"></i> Approve
+                                            </button>
+                                            <button
+                                                onClick={() => handleReject(sub.id)}
+                                                className="inline-flex items-center px-3 py-1.5 bg-white border border-red-300 text-red-600 hover:bg-red-50 text-xs font-bold rounded transition shadow-sm"
+                                                title="Tolak Pengajuan"
+                                            >
+                                                <i className="fa-solid fa-xmark mr-1.5"></i> Reject
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
@@ -201,8 +266,6 @@ export default function AdminValidasiPenyelenggaraPage() {
                     </table>
                 </div>
             )}
-            
-            <ModalValidation />
         </div>
     );
 }
