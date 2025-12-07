@@ -10,6 +10,7 @@ const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [closeTimeout, setCloseTimeout] = useState(null);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -29,7 +30,23 @@ const Navbar = () => {
 
   const onLogout = () => {
     logout();
-    navigate('/login');
+    navigate('/');
+  };
+
+  // Handle profile dropdown dengan delay
+  const handleMouseEnter = () => {
+    if (closeTimeout) {
+      clearTimeout(closeTimeout);
+      setCloseTimeout(null);
+    }
+    setIsProfileOpen(true);
+  };
+
+  const handleMouseLeave = () => {
+    const timeout = setTimeout(() => {
+      setIsProfileOpen(false);
+    }, 200); // Delay 200ms sebelum menutup
+    setCloseTimeout(timeout);
   };
 
   // Helper style active link 
@@ -105,10 +122,13 @@ const Navbar = () => {
                 </div>
 
                 {/* Profil Dropdown */}
-                <div className="relative">
-                   <button 
-                     onClick={() => setIsProfileOpen(!isProfileOpen)}
-                     className="flex items-center space-x-3 focus:outline-none group"
+                <div 
+                  className="relative"
+                  onMouseEnter={handleMouseEnter}
+                  onMouseLeave={handleMouseLeave}
+                >
+                   <div 
+                     className="flex items-center space-x-3 cursor-pointer group"
                    >
                        <div className="text-right hidden lg:block">
                           <p className="text-sm font-bold text-white leading-none group-hover:text-[#FF7F3E] transition">{user.nama}</p>
@@ -123,10 +143,10 @@ const Navbar = () => {
                             getUserInitial()
                           )}
                        </div>
-                   </button>
+                   </div>
                    
                    {isProfileOpen && (
-                    <div className="origin-top-right absolute right-0 mt-3 w-48 rounded-xl shadow-xl py-2 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-50 animate-fade-in-down border border-gray-100">
+                    <div className="origin-top-right absolute right-0 mt-3 w-48 rounded-xl shadow-xl py-2 bg-white ring-1 ring-black ring-opacity-5 z-50 animate-fade-in-down border border-gray-100">
                       <div className="px-4 py-3 border-b border-gray-100">
                         <p className="text-xs text-gray-400">Akun</p>
                         <p className="text-sm font-bold text-[#1a1a2e] truncate">{user.email}</p>
@@ -134,7 +154,6 @@ const Navbar = () => {
                       
                       <Link 
                         to="/profile"
-                        onClick={() => setIsProfileOpen(false)}
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#FF7F3E]"
                       >
                         Profile
@@ -142,7 +161,6 @@ const Navbar = () => {
                       
                       <Link 
                         to="/event-tersimpan"
-                        onClick={() => setIsProfileOpen(false)}
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#FF7F3E]"
                       >
                         Event Tersimpan

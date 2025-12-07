@@ -92,7 +92,12 @@ const CardAcara = ({ acara }) => {
   const imageUrl = getImageUrl(acara);
 
   // --- LOGIKA UTAMA ---
-  const handleDetailClick = () => {
+  const handleDetailClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    console.log('Detail clicked! User:', user);
+    
     if (!acara || !acara.slug) {
       console.error('CardAcara: Acara tidak memiliki slug', acara);
       alert('Event tidak valid');
@@ -137,13 +142,14 @@ const CardAcara = ({ acara }) => {
           {acara.kategori?.nama_kategori || 'Event'}
         </div>
 
-        {/* Tombol Bookmark/Simpan */}
-        <button
-          onClick={handleBookmarkClick}
-          disabled={isLoadingBookmark}
-          className="absolute top-3 left-3 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md hover:bg-white transition-all disabled:opacity-50 z-10"
-          title={isSaved ? 'Hapus dari simpanan' : 'Simpan event'}
-        >
+        {/* Tombol Bookmark/Simpan - Hanya tampil jika sudah login */}
+        {user && (
+          <button
+            onClick={handleBookmarkClick}
+            disabled={isLoadingBookmark}
+            className="absolute top-3 left-3 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md hover:bg-white transition-all disabled:opacity-50 z-10"
+            title={isSaved ? 'Hapus dari simpanan' : 'Simpan event'}
+          >
           <svg 
             className="w-5 h-5 text-red-500" 
             fill={isSaved ? 'currentColor' : 'none'} 
@@ -151,9 +157,10 @@ const CardAcara = ({ acara }) => {
             strokeWidth="2" 
             viewBox="0 0 24 24"
           >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
           </svg>
         </button>
+        )}
       </div>
 
       {/* Bagian Konten */}

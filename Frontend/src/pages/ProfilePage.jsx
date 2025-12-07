@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import authApi from '../api/authApi';
 
 const ProfilePage = () => {
-  const { user, setAuthData, token } = useAuth();
+  const { user, updateUser, token } = useAuth();
   const [activeTab, setActiveTab] = useState('info');
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -90,7 +90,7 @@ const ProfilePage = () => {
       const response = await authApi.updateProfile(formDataToSend);
       
       // Update user data di context
-      setAuthData(response.data.user, token);
+      updateUser(response.data.user);
       
       setMessage({ type: 'success', text: 'Profile berhasil diperbarui!' });
       setIsEditing(false);
@@ -138,20 +138,19 @@ const ProfilePage = () => {
         
         {/* Header Profile */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6 overflow-hidden">
-          <div className="bg-gradient-to-r from-[#1a1a2e] to-[#2a2a3e] h-32"></div>
-          <div className="px-8 pb-8">
-            <div className="flex items-end -mt-16 mb-4">
-              <div className="h-32 w-32 rounded-full bg-white border-4 border-white shadow-lg overflow-hidden flex items-center justify-center text-4xl font-bold text-[#FF7F3E]">
+          <div className="bg-gradient-to-r from-[#1a1a2e] to-[#2a2a3e] px-8 pt-8 pb-20">
+            <div className="flex items-center gap-6">
+              <div className="h-32 w-32 rounded-full bg-white border-4 border-white shadow-lg overflow-hidden flex items-center justify-center text-4xl font-bold text-[#FF7F3E] shrink-0">
                 {user.foto_profile_url ? (
                   <img src={user.foto_profile_url} alt={user.nama} className="w-full h-full object-cover" />
                 ) : (
                   user.nama ? user.nama.charAt(0).toUpperCase() : 'U'
                 )}
               </div>
-              <div className="ml-6 mb-2">
-                <h1 className="text-2xl font-bold text-gray-900">{user.nama}</h1>
-                <p className="text-gray-600">{user.email}</p>
-                <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold mt-2 ${
+              <div className="flex-1">
+                <h1 className="text-2xl font-bold text-white mb-1">{user.nama}</h1>
+                <p className="text-blue-400 mb-3">{user.email}</p>
+                <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
                   user.peran === 'Admin' ? 'bg-red-100 text-red-800' : 
                   user.is_penyelenggara ? 'bg-orange-100 text-orange-800' : 
                   'bg-blue-100 text-blue-800'

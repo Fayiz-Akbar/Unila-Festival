@@ -87,16 +87,25 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error("Logout error", error);
     }
+    
     // Hapus semua data sesi
-    localStorage.removeItem('AUTH_TOKEN');
-    localStorage.removeItem('AUTH_USER');
+    localStorage.clear(); // Clear semua localStorage
     setToken(null);
     setUser(null);
     setIsPenyelenggara(false);
+    
+    // Force reload untuk memastikan state benar-benar reset
+    window.location.href = '/';
+  };
+
+  // Fungsi untuk update user data (untuk profile update)
+  const updateUser = (updatedUser) => {
+    setUser(updatedUser);
+    localStorage.setItem('AUTH_USER', JSON.stringify(updatedUser));
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, isPenyelenggara, login, register, logout, loading }}>
+    <AuthContext.Provider value={{ user, token, isPenyelenggara, login, register, logout, updateUser, loading }}>
       {children}
     </AuthContext.Provider>
   );
