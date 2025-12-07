@@ -16,7 +16,6 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx';
 import ResetPasswordPage from './pages/ResetPasswordPage.jsx';
 import HomePage from './pages/HomePage.jsx';
 import AcaraDetailPage from './pages/AcaraDetailPage.jsx';
-import AgendaSayaPage from './pages/AgendaSayaPage.jsx';
 import EventPage from './pages/EventPage.jsx'; // <-- Pastikan file ini ada
 
 // --- Submission Pages (PJ 2) ---
@@ -59,7 +58,6 @@ const router = createBrowserRouter([
             element: <ProtectedRoute allowedRoles={['User', 'Admin']} />,
             children: [
                 { path: '/profile', element: <ProfilePage /> },
-                { path: '/agenda-saya', element: <AgendaSayaPage /> },
                 { path: '/event-tersimpan', element: <EventTersimpanPage /> },
                 { path: '/kelola-event', element: <KelolaEventPage /> },
                 { path: '/ajukan-penyelenggara', element: <AjukanPenyelenggaraPage /> },

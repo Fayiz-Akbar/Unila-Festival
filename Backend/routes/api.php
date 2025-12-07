@@ -6,7 +6,6 @@ use Illuminate\Support\Facades\Route;
 // --- Import Controllers ---
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PublicAcaraController;
-use App\Http\Controllers\Registration\PendaftaranController;
 use App\Http\Controllers\Submission\AcaraSubmissionController;
 use App\Http\Controllers\Submission\PenyelenggaraController;
 // Admin Controllers
@@ -56,12 +55,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/acara', [AcaraSubmissionController::class, 'store']);
         Route::put('/acara/{id}', [AcaraSubmissionController::class, 'update']);
         Route::delete('/acara/{id}', [AcaraSubmissionController::class, 'destroy']);
-    });
-
-    // --- Registration (Pendaftaran Peserta) ---
-    Route::prefix('registration')->group(function () {
-        Route::get('/agenda', [PendaftaranController::class, 'index']);
-        Route::post('/daftar', [PendaftaranController::class, 'store']);
     });
 
     // --- Event Tersimpan (Bookmark) ---

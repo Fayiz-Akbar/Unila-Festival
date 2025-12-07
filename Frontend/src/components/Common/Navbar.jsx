@@ -141,14 +141,6 @@ const Navbar = () => {
                       </Link>
                       
                       <Link 
-                        to="/agenda-saya"
-                        onClick={() => setIsProfileOpen(false)}
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#FF7F3E]"
-                      >
-                        Agenda Saya
-                      </Link>
-                      
-                      <Link 
                         to="/event-tersimpan"
                         onClick={() => setIsProfileOpen(false)}
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#FF7F3E]"

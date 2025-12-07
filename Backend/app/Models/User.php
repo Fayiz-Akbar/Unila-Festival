@@ -108,14 +108,4 @@ class User extends Authenticatable
             ->withPivot('status_tautan', 'catatan_admin')
             ->withTimestamps();
     }
-
-    /**
-     * Relasi Banyak-ke-Banyak: Satu Pengguna bisa mendaftar ke banyak Acara.
-     */
-    public function acaraYangDidafari()
-    {
-        return $this->belongsToMany(Acara::class, 'pendaftaran_acara', 'id_pengguna', 'id_acara')
-            ->withPivot('status_pendaftaran', 'tanggal_daftar')
-            ->withTimestamps();
-    }
 }

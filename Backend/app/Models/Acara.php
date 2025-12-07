@@ -59,13 +59,4 @@ class Acara extends Model
     {
         return $this->belongsTo(Kategori::class, 'id_kategori');
     }
-
-    /**
-     * Relasi Banyak-ke-Banyak: Satu Acara bisa didaftari oleh banyak User.
-     */
-    public function pendaftar()
-    {
-        return $this->belongsToMany(User::class, 'pendaftaran_acara', 'id_acara', 'id_pengguna')
-            ->withTimestamps();
-    }
 }
