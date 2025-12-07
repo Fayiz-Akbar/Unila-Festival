@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\KategoriController;
 use App\Http\Controllers\Admin\ValidasiAcaraController;
 use App\Http\Controllers\Admin\ValidasiPenyelenggaraController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\EventTersimpanController;
 
 // ===================================================================
 // == 1. RUTE PUBLIK (WILAYAH PJ 3 - Public)
@@ -66,6 +67,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/agenda', [PendaftaranController::class, 'index']); // Dapat "Agenda Saya"
         Route::post('/daftar', [PendaftaranController::class, 'store']); // Mendaftar ke sebuah acara
     });
+
+    // --- Event Tersimpan (Bookmark) ---
+    Route::get('/event-tersimpan', [EventTersimpanController::class, 'index']); // List event tersimpan
+    Route::post('/event-tersimpan', [EventTersimpanController::class, 'store']); // Simpan event
+    Route::delete('/event-tersimpan/{id_acara}', [EventTersimpanController::class, 'destroy']); // Hapus dari simpanan
+    Route::get('/event-tersimpan/check/{id_acara}', [EventTersimpanController::class, 'check']); // Cek status tersimpan
 });
 
 // ===================================================================
