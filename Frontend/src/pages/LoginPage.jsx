@@ -20,29 +20,24 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      // 1. Panggil fungsi login dari AuthContext
-      // Fungsi ini mengembalikan response lengkap dari Axios
       const response = await login(form.email, form.password);
       
-      // 2. Ambil data user dari response backend
-      // Struktur: response -> data -> user
+      // Pastikan struktur response sesuai dengan backend Anda
       const user = response.data.user;
 
-      // 3. Cek Role (Peran) untuk menentukan arah redirect
-      // Kita cek 'admin' (huruf kecil) dan 'Admin' (kapital) untuk jaga-jaga
-      if (user.peran === 'admin' || user.peran === 'Admin') {
-        console.log("Login sebagai Admin, redirect ke Dashboard...");
-        navigate("/admin/dashboard");
+      // PERBAIKAN LOGIKA REDIRECT
+      // Menggunakan toLowerCase() untuk menangani 'Admin', 'admin', atau 'ADMIN'
+      const userRole = user.peran ? user.peran.toLowerCase() : "";
+
+      if (userRole === 'admin') {
+        // Tambahkan replace: true agar user tidak bisa back ke login
+        navigate("/admin/dashboard", { replace: true });
       } else {
-        console.log("Login sebagai User, redirect ke Home...");
-        navigate("/"); // Bisa juga diganti ke "/agenda-saya" jika ingin spesifik
+        navigate("/", { replace: true });
       }
 
     } catch (err) {
-      // Log error ke console untuk debugging
       console.error("Login error:", err);
-      
-      // Menangkap pesan error dari backend (response 401/422)
       setError(err.response?.data?.message || "Login gagal. Periksa email dan kata sandi Anda.");
     } finally {
       setLoading(false);

@@ -34,7 +34,7 @@ const AgendaSayaList = () => {
   const getStatusBadge = (status) => {
     const styles = {
       Published: "bg-green-100 text-green-800 border-green-200",
-      Approved: "bg-blue-100 text-blue-800 border-blue-200",
+      Approved: "bg-blue-100 text-blue-800 border-blue-200", // Jika ada status ini
       Pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
       Rejected: "bg-red-100 text-red-800 border-red-200",
       Draft: "bg-gray-100 text-gray-800 border-gray-200",
@@ -74,6 +74,7 @@ const AgendaSayaList = () => {
   return (
     <div className="space-y-6">
       {myEvents.map((event) => {
+        // Logic Gambar (Prioritas URL vs Upload)
         const imageUrl = event.poster_url 
             ? (event.poster_url.startsWith('http') ? event.poster_url : `${STORAGE_URL}${event.poster_url}`)
             : 'https://via.placeholder.com/150?text=No+Img';
@@ -82,7 +83,12 @@ const AgendaSayaList = () => {
           <div key={event.id} className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col sm:flex-row">
             {/* Gambar Kecil */}
             <div className="sm:w-48 h-48 sm:h-auto bg-gray-200 relative shrink-0">
-               <img src={imageUrl} alt={event.judul} className="w-full h-full object-cover" />
+               <img 
+                 src={imageUrl} 
+                 alt={event.judul} 
+                 className="w-full h-full object-cover" 
+                 onError={(e) => { e.target.src = "https://via.placeholder.com/150?text=Error"; }}
+               />
             </div>
 
             {/* Konten */}
@@ -93,7 +99,7 @@ const AgendaSayaList = () => {
                      {getStatusBadge(event.status)}
                   </div>
                   
-                  <div className="text-sm text-gray-500 space-y-1 mb-4">
+                  <div className="text-sm text-gray-500 space-y-1 mb-3">
                      <p className="flex items-center">
                         <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                         {new Date(event.waktu_mulai).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
@@ -103,10 +109,25 @@ const AgendaSayaList = () => {
                         {event.lokasi}
                      </p>
                   </div>
+
+                  {/* --- FITUR BARU: Menampilkan Alasan Penolakan --- */}
+                  {event.status === 'Rejected' && event.catatan_admin_acara && (
+                    <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                        <div className="flex items-start">
+                            <svg className="w-5 h-5 text-red-500 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <div>
+                                <p className="text-xs font-bold text-red-700 uppercase mb-0.5">Alasan Penolakan:</p>
+                                <p className="text-sm text-red-600 leading-snug">{event.catatan_admin_acara}</p>
+                            </div>
+                        </div>
+                    </div>
+                  )}
+                  {/* ------------------------------------------------ */}
+
                </div>
 
                {/* Action Buttons */}
-               <div className="flex items-center gap-3 mt-2 pt-4 border-t border-gray-50">
+               <div className="flex items-center gap-3 mt-4 pt-4 border-t border-gray-50">
                   <Link 
                     to={`/acara/${event.acara?.slug || event.slug}`} 
                     className="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"

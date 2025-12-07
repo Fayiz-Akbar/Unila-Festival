@@ -3,31 +3,30 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-// Import semua controller sesuai wilayah PJ
-// (Tidak masalah jika filenya belum ada, kita mendaftarkannya sekarang)
+// --- Import Controllers ---
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PublicAcaraController;
 use App\Http\Controllers\Registration\PendaftaranController;
 use App\Http\Controllers\Submission\AcaraSubmissionController;
 use App\Http\Controllers\Submission\PenyelenggaraController;
+// Admin Controllers
 use App\Http\Controllers\Admin\KategoriController;
 use App\Http\Controllers\Admin\ValidasiAcaraController;
 use App\Http\Controllers\Admin\ValidasiPenyelenggaraController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\EventTersimpanController;
+use App\Http\Controllers\Admin\ManajemenAcaraController; // <-- Import Baru
 
 // ===================================================================
-// == 1. RUTE PUBLIK (WILAYAH PJ 3 - Public)
-// == Endpoint ini tidak memerlukan login.
+// == 1. RUTE PUBLIK (Tanpa Login)
 // ===================================================================
 
-Route::get('/acara', [PublicAcaraController::class, 'index']); // Dapatkan semua acara (published)
-Route::get('/acara/{slug}', [PublicAcaraController::class, 'show']); // Dapatkan detail 1 acara
-Route::get('/kategori', [PublicAcaraController::class, 'getAllKategori']); // Dapatkan semua kategori untuk filter
+Route::get('/acara', [PublicAcaraController::class, 'index']); 
+Route::get('/acara/{slug}', [PublicAcaraController::class, 'show']); 
+Route::get('/kategori', [PublicAcaraController::class, 'getAllKategori']); 
 
 // ===================================================================
-// == 2. RUTE AUTENTIKASI (WILAYAH PJ 2 - Auth)
-// == Endpoint untuk registrasi dan login.
+// == 2. RUTE AUTENTIKASI
 // ===================================================================
 
 Route::post('/register', [AuthController::class, 'register']);
@@ -36,36 +35,33 @@ Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
 // ===================================================================
-// == 3. RUTE USER TERPROTEKSI (Perlu Login)
-// == Endpoint ini memerlukan token (via middleware 'auth:sanctum').
+// == 3. RUTE TERPROTEKSI (Login User/Admin)
 // ===================================================================
 
 Route::middleware('auth:sanctum')->group(function () {
     
-    // Endpoint Auth
-    Route::post('/logout', [AuthController::class, 'logout']); // PJ 2
-    Route::get('/user', function (Request $request) { // PJ 2
-        return $request->user(); // Mendapatkan data user yg sedang login
+    // --- Auth & Profile ---
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/user', function (Request $request) {
+        return $request->user();
     });
-    Route::put('/user/profile', [AuthController::class, 'updateProfile']); // Update Profile
+    Route::put('/user/profile', [AuthController::class, 'updateProfile']);
 
-    // --- WILAYAH PJ 2 (Submission) ---
+    // --- Submission (Penyelenggara & Acara) ---
     Route::prefix('submission')->group(function () {
-        // Rute untuk Penyelenggara
-        Route::get('/penyelenggara', [PenyelenggaraController::class, 'index']); // Dapat data penyelenggara milik user
-        Route::post('/penyelenggara', [PenyelenggaraController::class, 'store']); // Mengajukan penyelenggara baru
+        Route::get('/penyelenggara', [PenyelenggaraController::class, 'index']);
+        Route::post('/penyelenggara', [PenyelenggaraController::class, 'store']);
         
-        // Rute untuk Acara
-        Route::get('/acara', [AcaraSubmissionController::class, 'index']); // Dapat data acara milik user
-        Route::post('/acara', [AcaraSubmissionController::class, 'store']); // Mengajukan acara baru
-        Route::put('/acara/{id}', [AcaraSubmissionController::class, 'update']); // Update acara (jika diizinkan)
-        Route::delete('/acara/{id}', [AcaraSubmissionController::class, 'destroy']); // Hapus/batalkan acara
+        Route::get('/acara', [AcaraSubmissionController::class, 'index']);
+        Route::post('/acara', [AcaraSubmissionController::class, 'store']);
+        Route::put('/acara/{id}', [AcaraSubmissionController::class, 'update']);
+        Route::delete('/acara/{id}', [AcaraSubmissionController::class, 'destroy']);
     });
 
-    // --- WILAYAH PJ 3 (Registration) ---
+    // --- Registration (Pendaftaran Peserta) ---
     Route::prefix('registration')->group(function () {
-        Route::get('/agenda', [PendaftaranController::class, 'index']); // Dapat "Agenda Saya"
-        Route::post('/daftar', [PendaftaranController::class, 'store']); // Mendaftar ke sebuah acara
+        Route::get('/agenda', [PendaftaranController::class, 'index']);
+        Route::post('/daftar', [PendaftaranController::class, 'store']);
     });
 
     // --- Event Tersimpan (Bookmark) ---
@@ -76,27 +72,26 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 // ===================================================================
-// == 4. RUTE ADMIN TERPROTEKSI (Perlu Login + Peran Admin)
-// == WILAYAH PJ 1 (Admin)
+// == 4. RUTE ADMIN (Login + Role Admin)
 // ===================================================================
 
-// Middleware 'auth:sanctum' memastikan harus login.
-// Middleware 'admin' (yang akan kita buat nanti) memastikan harus peran 'Admin'.
 Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
     
-    // Rute Validasi
-    Route::get('/validasi/penyelenggara', [ValidasiPenyelenggaraController::class, 'index']); // Get data penyelenggara (pending)
-    Route::post('/validasi/penyelenggara/{id}', [ValidasiPenyelenggaraController::class, 'validatePenyelenggara']); // Approve/Reject
-    
-    Route::get('/validasi/acara', [ValidasiAcaraController::class, 'index']); // Get data acara (pending)
-    Route::post('/validasi/acara/{id}', [ValidasiAcaraController::class, 'validateAcara']); // Approve/Reject
-    
-    // Rute CRUD Kategori
-    Route::apiResource('/kategori', KategoriController::class);
-    
-    // Route Dashboard Statistik
+    // Dashboard Stats
     Route::get('/dashboard-stats', [DashboardController::class, 'index']);
-    // (Opsional) Rute CRUD Pengguna & Penyelenggara penuh
-    // Route::apiResource('/users', ...);
-    // Route::apiResource('/penyelenggara', ...);
+
+    // Validasi
+    Route::get('/validasi/penyelenggara', [ValidasiPenyelenggaraController::class, 'index']);
+    Route::post('/validasi/penyelenggara/{id}', [ValidasiPenyelenggaraController::class, 'validatePenyelenggara']);
+    
+    Route::get('/validasi/acara', [ValidasiAcaraController::class, 'index']);
+    Route::post('/validasi/acara/{id}', [ValidasiAcaraController::class, 'validateAcara']);
+    
+    // CRUD Kategori
+    Route::apiResource('/kategori', KategoriController::class);
+
+    // --- FITUR BARU: Manajemen Acara (Full Control) ---
+    Route::get('/manajemen-acara', [ManajemenAcaraController::class, 'index']);
+    Route::post('/manajemen-acara/{id}/batalkan', [ManajemenAcaraController::class, 'batalkan']);
+    Route::delete('/manajemen-acara/{id}', [ManajemenAcaraController::class, 'destroy']);
 });
