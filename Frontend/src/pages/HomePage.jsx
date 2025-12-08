@@ -1,16 +1,20 @@
 // Frontend/src/pages/HomePage.jsx
 import React, { useState, useEffect } from "react";
-// Link masih diimport jika nanti dibutuhkan, tapi tombol scroll pakai onClick
-import { Link } from "react-router-dom"; 
+import { Link, useNavigate } from "react-router-dom"; 
+import { useAuth } from "../context/AuthContext";
 import publicApi from "../api/publicApi"; 
+import eventTersimpanApi from "../api/eventTersimpanApi";
 
 // Sesuaikan URL storage Laravel Anda jika nanti ada upload manual
 const STORAGE_URL = "http://127.0.0.1:8000/storage/";
 
 export default function HomePage() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [savedEvents, setSavedEvents] = useState({}); // Track saved events by ID
   
   // State untuk Filter
   const [filterType, setFilterType] = useState("Tipe Acara");
@@ -27,7 +31,10 @@ export default function HomePage() {
 
   useEffect(() => {
     fetchEvents();
-  }, []);
+    if (user) {
+      checkAllBookmarks();
+    }
+  }, [user]);
 
   const fetchEvents = async () => {
     try {
@@ -40,6 +47,44 @@ export default function HomePage() {
       setEvents([]); 
     } finally {
       setLoading(false);
+    }
+  };
+
+  const checkAllBookmarks = async () => {
+    try {
+      const response = await eventTersimpanApi.getEventTersimpan();
+      const saved = {};
+      response.data.data.forEach(event => {
+        saved[event.id] = true;
+      });
+      setSavedEvents(saved);
+    } catch (error) {
+      console.error("Error checking bookmarks:", error);
+    }
+  };
+
+  const handleBookmarkClick = async (e, eventId) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!user) {
+      if (window.confirm("Anda harus login untuk menyimpan event. Login sekarang?")) {
+        navigate('/login');
+      }
+      return;
+    }
+
+    try {
+      if (savedEvents[eventId]) {
+        await eventTersimpanApi.hapusEvent(eventId);
+        setSavedEvents(prev => ({ ...prev, [eventId]: false }));
+      } else {
+        await eventTersimpanApi.simpanEvent(eventId);
+        setSavedEvents(prev => ({ ...prev, [eventId]: true }));
+      }
+    } catch (error) {
+      console.error('Error toggling bookmark:', error);
+      alert(error.response?.data?.message || 'Terjadi kesalahan');
     }
   };
 
@@ -212,25 +257,43 @@ export default function HomePage() {
                             : 'https://via.placeholder.com/400x200?text=No+Image';
 
                         return (
-                            <Link to={`/acara/${event.slug}`} key={event.id} className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 border border-gray-100 flex flex-col h-full">
+                            <div key={event.id} className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 border border-gray-100 flex flex-col h-full">
                                 {/* Image Container */}
                                 <div className="relative h-48 overflow-hidden bg-gray-200">
                                     <img 
                                         src={imageUrl} 
                                         alt={event.judul} 
-                                        className="w-full h-full object-cover transform group-hover:scale-110 transition duration-700"
+                                        className="w-full h-full object-cover transform group-hover:scale-110 transition duration-700 pointer-events-none"
                                         onError={(e) => {e.target.src = 'https://via.placeholder.com/400x200?text=Image+Error'}}
                                     />
                                     {/* Overlay Gelap saat Hover */}
-                                    <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-all duration-300"></div>
+                                    <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-all duration-300 pointer-events-none"></div>
                                     
-                                    <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-[#1a1a2e] shadow-sm">
+                                    {/* Kategori Badge */}
+                                    <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-[#1a1a2e] shadow-sm pointer-events-none">
                                         {event.kategori?.nama_kategori || 'Event'}
                                     </div>
+
+                                    {/* Tombol Bookmark */}
+                                    <button
+                                        onClick={(e) => handleBookmarkClick(e, event.id)}
+                                        className="absolute top-3 left-3 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md hover:bg-white transition-all z-10"
+                                        title={savedEvents[event.id] ? 'Hapus dari simpanan' : 'Simpan event'}
+                                    >
+                                        <svg 
+                                            className="w-5 h-5 text-red-500" 
+                                            fill={savedEvents[event.id] ? 'currentColor' : 'none'} 
+                                            stroke="currentColor" 
+                                            strokeWidth="2" 
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
+                                        </svg>
+                                    </button>
                                 </div>
 
                                 {/* Content Container */}
-                                <div className="p-5 flex gap-4 flex-1">
+                                <div className="p-5 flex gap-4 flex-1 pointer-events-none">
                                     {/* Date Badge */}
                                     <div className="flex flex-col items-center justify-start pt-1 min-w-[50px]">
                                         <span className="text-xs font-bold text-[#FF7F3E] uppercase tracking-wide">{dateParts.month}</span>
@@ -247,19 +310,19 @@ export default function HomePage() {
                                         </p>
                                         
                                         {/* Footer Card */}
-                                        <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-100">
+                                        <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-100 pointer-events-auto">
                                             <div className="flex items-center text-xs text-gray-500">
                                                 <svg className="w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                                                 <span className="truncate max-w-[120px]">{event.lokasi || 'Online'}</span>
                                             </div>
-                                            <span className="text-xs font-bold text-[#4F46E5] flex items-center group-hover:translate-x-1 transition-transform">
+                                            <Link to={`/acara/${event.slug}`} className="text-xs font-bold text-[#4F46E5] flex items-center group-hover:translate-x-1 transition-transform hover:text-blue-800">
                                                 Detail 
                                                 <svg className="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
-                                            </span>
+                                            </Link>
                                         </div>
                                     </div>
                                 </div>
-                            </Link>
+                            </div>
                         );
                     })
                 ) : (

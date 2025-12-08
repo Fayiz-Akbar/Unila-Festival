@@ -97,7 +97,7 @@ const FormAjuanAcara = () => {
       await submissionApi.createAcara(data);
       
       alert('Acara berhasil diajukan! Menunggu validasi admin.');
-      navigate('/agenda-saya'); // Redirect ke halaman list event saya
+      navigate('/kelola-event');
 
     } catch (err) {
       console.error("Gagal submit acara:", err);

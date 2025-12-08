@@ -1,0 +1,11 @@
+FILE INI UNTUK TEST - CardAcara.jsx sudah diupdate dengan tombol Simpan
+
+Jika file ini muncul di project, berarti file system berfungsi normal.
+
+Coba:
+1. Stop dev server (Ctrl+C di terminal)
+2. Jalankan: npm run dev
+3. Hard refresh browser (Ctrl+Shift+F5)
+4. Buka console (F12) dan cari "CardAcara rendered - NEW VERSION"
+
+Jika masih tidak muncul, ada masalah dengan HMR/cache browser yang sangat persistent.

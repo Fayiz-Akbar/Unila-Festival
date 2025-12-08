@@ -6,7 +6,6 @@ use Illuminate\Support\Facades\Route;
 // --- Import Controllers ---
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PublicAcaraController;
-use App\Http\Controllers\Registration\PendaftaranController;
 use App\Http\Controllers\Submission\AcaraSubmissionController;
 use App\Http\Controllers\Submission\PenyelenggaraController;
 // Admin Controllers
@@ -14,6 +13,7 @@ use App\Http\Controllers\Admin\KategoriController;
 use App\Http\Controllers\Admin\ValidasiAcaraController;
 use App\Http\Controllers\Admin\ValidasiPenyelenggaraController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\EventTersimpanController;
 use App\Http\Controllers\Admin\ManajemenAcaraController; // <-- Import Baru
 
 // ===================================================================
@@ -57,11 +57,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/acara/{id}', [AcaraSubmissionController::class, 'destroy']);
     });
 
-    // --- Registration (Pendaftaran Peserta) ---
-    Route::prefix('registration')->group(function () {
-        Route::get('/agenda', [PendaftaranController::class, 'index']);
-        Route::post('/daftar', [PendaftaranController::class, 'store']);
-    });
+    // --- Event Tersimpan (Bookmark) ---
+    Route::get('/event-tersimpan', [EventTersimpanController::class, 'index']); // List event tersimpan
+    Route::post('/event-tersimpan', [EventTersimpanController::class, 'store']); // Simpan event
+    Route::delete('/event-tersimpan/{id_acara}', [EventTersimpanController::class, 'destroy']); // Hapus dari simpanan
+    Route::get('/event-tersimpan/check/{id_acara}', [EventTersimpanController::class, 'check']); // Cek status tersimpan
 });
 
 // ===================================================================
