@@ -15,6 +15,13 @@ const AcaraDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Cek guest access - redirect ke login
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/login');
+    }
+  }, [authLoading, user, navigate]);
+
   // Fetch detail acara
   useEffect(() => {
     const fetchDetail = async () => {

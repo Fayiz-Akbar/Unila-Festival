@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import publicApi from "../api/publicApi"; 
 import eventTersimpanApi from "../api/eventTersimpanApi";
+import Swal from 'sweetalert2';
 
 // Sesuaikan URL storage Laravel Anda jika nanti ada upload manual
 const STORAGE_URL = "http://127.0.0.1:8000/storage/";
@@ -315,10 +316,31 @@ export default function HomePage() {
                                                 <svg className="w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                                                 <span className="truncate max-w-[120px]">{event.lokasi || 'Online'}</span>
                                             </div>
-                                            <Link to={`/acara/${event.slug}`} className="text-xs font-bold text-[#4F46E5] flex items-center group-hover:translate-x-1 transition-transform hover:text-blue-800">
+                                            <button 
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (!user) {
+                                                        Swal.fire({
+                                                            icon: 'warning',
+                                                            title: 'Akses Terbatas',
+                                                            text: 'Anda harus login untuk melihat detail dan mendaftar acara ini.',
+                                                            showCancelButton: true,
+                                                            confirmButtonText: 'Login Sekarang',
+                                                            cancelButtonText: 'Lihat-lihat Dulu',
+                                                            confirmButtonColor: '#3085d6',
+                                                            cancelButtonColor: '#d33'
+                                                        }).then((result) => {
+                                                            if (result.isConfirmed) navigate('/login');
+                                                        });
+                                                    } else {
+                                                        navigate(`/acara/${event.slug}`);
+                                                    }
+                                                }}
+                                                className="text-xs font-bold text-[#4F46E5] flex items-center group-hover:translate-x-1 transition-transform hover:text-blue-800"
+                                            >
                                                 Detail 
                                                 <svg className="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
-                                            </Link>
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
