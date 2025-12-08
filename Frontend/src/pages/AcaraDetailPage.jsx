@@ -15,19 +15,8 @@ const AcaraDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // 1. Proteksi Halaman: Redirect jika tidak login
+  // Fetch detail acara
   useEffect(() => {
-    if (!authLoading && !user) {
-        // Simpan URL tujuan agar bisa redirect balik setelah login (opsional)
-        // navigate('/login', { state: { from: location } }); 
-        navigate('/login'); 
-    }
-  }, [user, authLoading, navigate]);
-
-  useEffect(() => {
-    // Jangan fetch jika user belum terautentikasi (untuk menghindari request bocor)
-    if (!user) return;
-
     const fetchDetail = async () => {
       try {
         setLoading(true);
@@ -44,19 +33,16 @@ const AcaraDetailPage = () => {
     if (slug) {
       fetchDetail();
     }
-  }, [slug, user]); // Tambahkan user sebagai dependency
+  }, [slug]);
 
-  // Tampilkan loading jika sedang cek auth ATAU sedang fetch data
-  if (authLoading || loading) {
+  // Tampilkan loading jika sedang fetch data
+  if (loading) {
     return (
       <div className="min-h-screen flex justify-center items-center bg-gray-50">
         <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600"></div>
       </div>
     );
   }
-  
-  // Jika user belum login (tapi useEffect redirect belum jalan), return null agar tidak render konten
-  if (!user) return null;
 
   if (error || !acara) {
     return (
@@ -177,14 +163,27 @@ const AcaraDetailPage = () => {
              {/* Tombol Aksi */}
              <div className="flex flex-col sm:flex-row gap-4 mt-8 pt-8 border-t border-gray-100">
                 {acara.link_pendaftaran ? (
-                   <a 
-                     href={acara.link_pendaftaran} 
-                     target="_blank" 
-                     rel="noopener noreferrer"
-                     className="flex-1 text-center px-8 py-4 bg-[#FF7F3E] hover:bg-orange-600 text-white font-bold rounded-xl transition transform hover:-translate-y-1 shadow-lg shadow-orange-200"
-                   >
-                     Daftar Sekarang
-                   </a>
+                   user ? (
+                     <a 
+                       href={acara.link_pendaftaran} 
+                       target="_blank" 
+                       rel="noopener noreferrer"
+                       className="flex-1 text-center px-8 py-4 bg-[#FF7F3E] hover:bg-orange-600 text-white font-bold rounded-xl transition transform hover:-translate-y-1 shadow-lg shadow-orange-200"
+                     >
+                       Daftar Sekarang
+                     </a>
+                   ) : (
+                     <button 
+                       onClick={() => {
+                         if (window.confirm("Anda harus login untuk mendaftar event ini. Login sekarang?")) {
+                           navigate('/login');
+                         }
+                       }}
+                       className="flex-1 text-center px-8 py-4 bg-[#FF7F3E] hover:bg-orange-600 text-white font-bold rounded-xl transition transform hover:-translate-y-1 shadow-lg shadow-orange-200"
+                     >
+                       Daftar Sekarang
+                     </button>
+                   )
                 ) : (
                    <button disabled className="flex-1 px-8 py-4 bg-gray-300 text-gray-500 font-bold rounded-xl cursor-not-allowed">
                      Pendaftaran Belum Dibuka

@@ -162,15 +162,26 @@ class AuthController extends Controller
     {
         $user = $request->user();
 
+        // Debug log
+        Log::info('Update profile request', [
+            'has_file' => $request->hasFile('foto_profile'),
+            'file_name' => $request->hasFile('foto_profile') ? $request->file('foto_profile')->getClientOriginalName() : null,
+            'nama' => $request->nama,
+            'email' => $request->email
+        ]);
+
         // Validasi Input
         $validator = Validator::make($request->all(), [
             'nama' => 'required|string|max:255',
             'email' => 'required|email|unique:pengguna,email,' . $user->id,
-            'current_password' => 'required_with:password',
+            'current_password' => 'nullable|required_with:password',
             'password' => 'nullable|min:6|confirmed',
             'foto_profile' => 'nullable|image|mimes:jpeg,png,jpg|max:2048', // Max 2MB
         ], [
-            'current_password.required_with' => 'Password lama wajib diisi untuk mengubah password.'
+            'current_password.required_with' => 'Password lama wajib diisi untuk mengubah password.',
+            'foto_profile.image' => 'File harus berupa gambar.',
+            'foto_profile.mimes' => 'Format foto harus JPG, JPEG, atau PNG.',
+            'foto_profile.max' => 'Ukuran foto maksimal 2MB.'
         ]);
 
         if ($validator->fails()) {
@@ -203,13 +214,17 @@ class AuthController extends Controller
             if ($request->hasFile('foto_profile')) {
                 // Hapus foto lama jika ada
                 if ($user->foto_profile_url) {
-                    $oldPath = str_replace(asset('storage/'), '', $user->foto_profile_url);
-                    \Illuminate\Support\Facades\Storage::disk('public')->delete($oldPath);
+                    // Ekstrak path dari URL (misal: profiles/xxx.jpg)
+                    $oldPath = str_replace([url('storage/'), asset('storage/')], '', $user->foto_profile_url);
+                    $oldPath = ltrim($oldPath, '/');
+                    if (\Illuminate\Support\Facades\Storage::disk('public')->exists($oldPath)) {
+                        \Illuminate\Support\Facades\Storage::disk('public')->delete($oldPath);
+                    }
                 }
                 
-                // Simpan foto baru
+                // Simpan foto baru (hanya simpan path relatif)
                 $fotoPath = $request->file('foto_profile')->store('profiles', 'public');
-                $user->foto_profile_url = asset('storage/' . $fotoPath);
+                $user->foto_profile_url = 'profiles/' . basename($fotoPath);
             }
 
             $user->save();

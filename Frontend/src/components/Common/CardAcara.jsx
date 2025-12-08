@@ -104,38 +104,42 @@ const CardAcara = ({ acara }) => {
     }
   };
 
-  // --- 3. Handle Klik Detail (PERBAIKAN UTAMA) ---
+  // --- 3. Handle Klik Detail ---
   const handleDetailClick = () => {
+    if (!acara || !acara.slug) {
+      console.error('CardAcara: Acara tidak memiliki slug', acara);
+      alert('Event tidak valid');
+      return;
+    }
+    
+    // Jika guest, tampilkan SweetAlert untuk login
     if (!user) {
-      // JANGAN LANGSUNG NAVIGATE. Tampilkan pilihan dulu.
       Swal.fire({
         icon: 'warning',
         title: 'Akses Terbatas',
         text: 'Anda harus login untuk melihat detail dan mendaftar acara ini.',
         showCancelButton: true,
         confirmButtonText: 'Login Sekarang',
-        cancelButtonText: 'Lihat-lihat Dulu', // Opsi untuk tetap di halaman
+        cancelButtonText: 'Lihat-lihat Dulu',
         confirmButtonColor: '#3085d6',
         cancelButtonColor: '#d33'
       }).then((result) => {
-        // Hanya pindah jika user klik tombol "Login Sekarang"
         if (result.isConfirmed) {
-            navigate('/login');
+          navigate('/login');
         }
-        // Jika klik "Lihat-lihat Dulu" atau silang, tidak terjadi apa-apa (tetap di Home)
       });
-    } else {
-      // Jika sudah login, langsung gas ke detail
-      navigate(`/acara/${acara.slug}`);
+      return;
     }
+    
+    // Jika sudah login, langsung ke detail
+    navigate(`/acara/${acara.slug}`);
   };
 
   if (!acara) return null;
 
   return (
     <div 
-        onClick={handleDetailClick}
-        className="group bg-white rounded-xl shadow-sm hover:shadow-lg border border-gray-100 overflow-hidden transition-all duration-300 flex flex-col h-full cursor-pointer relative"
+        className="group bg-white rounded-xl shadow-sm hover:shadow-lg border border-gray-100 overflow-hidden transition-all duration-300 flex flex-col h-full relative"
     >
       {/* Bagian Gambar */}
       <div className="relative h-48 w-full overflow-hidden bg-gray-200">
@@ -154,23 +158,25 @@ const CardAcara = ({ acara }) => {
           {acara.kategori?.nama_kategori || 'Event'}
         </div>
 
-        {/* Tombol Bookmark */}
-        <button
-          onClick={handleBookmarkClick}
-          disabled={isLoadingBookmark}
-          className="absolute top-3 left-3 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md hover:bg-white transition-all disabled:opacity-50 z-20 hover:scale-110"
-          title={isSaved ? 'Hapus dari simpanan' : 'Simpan event'}
-        >
-          {isSaved ? (
-             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-red-500">
-               <path fillRule="evenodd" d="M6.32 2.577a49.255 49.255 0 0111.36 0c1.497.174 2.57 1.46 2.57 2.93V21a.75.75 0 01-1.085.67L12 18.089l-7.165 3.583A.75.75 0 013.75 21V5.507c0-1.47 1.073-2.756 2.57-2.93z" clipRule="evenodd" />
-             </svg>
-          ) : (
-             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-gray-500 hover:text-red-500 transition-colors">
-               <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" />
-             </svg>
-          )}
-        </button>
+        {/* Tombol Bookmark - Hanya tampil jika sudah login */}
+        {user && (
+          <button
+            onClick={handleBookmarkClick}
+            disabled={isLoadingBookmark}
+            className="absolute top-3 left-3 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md hover:bg-white transition-all disabled:opacity-50 z-20 hover:scale-110"
+            title={isSaved ? 'Hapus dari simpanan' : 'Simpan event'}
+          >
+            {isSaved ? (
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-red-500">
+                <path fillRule="evenodd" d="M6.32 2.577a49.255 49.255 0 0111.36 0c1.497.174 2.57 1.46 2.57 2.93V21a.75.75 0 01-1.085.67L12 18.089l-7.165 3.583A.75.75 0 013.75 21V5.507c0-1.47 1.073-2.756 2.57-2.93z" clipRule="evenodd" />
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-gray-500 hover:text-red-500 transition-colors">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" />
+              </svg>
+            )}
+          </button>
+        )}
       </div>
 
       {/* Bagian Konten */}
@@ -199,13 +205,16 @@ const CardAcara = ({ acara }) => {
             <span className="truncate max-w-[150px]">{acara.lokasi || 'Online'}</span>
           </div>
           
-          {/* Teks Detail */}
-          <span className="text-sm font-medium text-blue-600 group-hover:text-blue-800 flex items-center transition-colors">
+          {/* Tombol Detail */}
+          <button
+            onClick={handleDetailClick}
+            className="text-sm font-medium text-blue-600 hover:text-blue-800 flex items-center transition-colors"
+          >
             Detail
             <svg className="w-4 h-4 ml-1 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
             </svg>
-          </span>
+          </button>
         </div>
       </div>
     </div>

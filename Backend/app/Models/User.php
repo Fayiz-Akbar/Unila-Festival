@@ -86,6 +86,24 @@ class User extends Authenticatable
             ->exists();
     }
 
+    /**
+     * Accessor: Mengubah foto_profile_url menjadi full URL
+     */
+    public function getFotoProfileUrlAttribute($value)
+    {
+        if (!$value) {
+            return null;
+        }
+        
+        // Jika sudah full URL, kembalikan apa adanya
+        if (str_starts_with($value, 'http')) {
+            return $value;
+        }
+        
+        // Jika hanya path relatif, tambahkan base URL
+        return url('storage/' . $value);
+    }
+
     // =========================================================
     // === DEFINISI RELASI ===
     // =========================================================
