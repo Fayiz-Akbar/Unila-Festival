@@ -15,17 +15,8 @@ const AcaraDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Proteksi: Jika guest akses langsung via URL, redirect ke home
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate('/');
-    }
-  }, [user, authLoading, navigate]);
-
   // Fetch detail acara
   useEffect(() => {
-    // Jangan fetch jika belum login
-    if (!user) return;
     const fetchDetail = async () => {
       try {
         setLoading(true);
@@ -42,12 +33,7 @@ const AcaraDetailPage = () => {
     if (slug) {
       fetchDetail();
     }
-  }, [slug, user]); // Tambahkan user sebagai dependency
-
-  // Return null jika guest (redirect akan handle)
-  if (!user) {
-    return null;
-  }
+  }, [slug]);
 
   // Tampilkan loading jika sedang fetch data
   if (loading) {

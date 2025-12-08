@@ -91,28 +91,13 @@ const CardAcara = ({ acara }) => {
 
   const imageUrl = getImageUrl(acara);
 
-  // --- LOGIKA UTAMA ---
-  const handleDetailClick = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    console.log('Detail clicked! User:', user);
-    
+  const handleDetailClick = () => {
     if (!acara || !acara.slug) {
       console.error('CardAcara: Acara tidak memiliki slug', acara);
       alert('Event tidak valid');
       return;
     }
-    
-    if (!user) {
-      // Jika Guest: Tampilkan Konfirmasi Login
-      if (window.confirm("Anda harus login untuk melihat detail acara ini. Login sekarang?")) {
-        navigate('/login');
-      }
-    } else {
-      // Jika User: Lanjut ke Detail
-      navigate(`/acara/${acara.slug}`);
-    }
+    navigate(`/acara/${acara.slug}`);
   };
 
   // Null check
