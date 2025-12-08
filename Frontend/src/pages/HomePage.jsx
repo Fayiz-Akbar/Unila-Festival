@@ -19,7 +19,8 @@ export default function HomePage() {
   
   // State untuk Filter
   const [filterType, setFilterType] = useState("Tipe Acara");
-  const [filterMonth, setFilterMonth] = useState("Bulan"); 
+  const [filterMonth, setFilterMonth] = useState("Bulan");
+  const [kategoris, setKategoris] = useState([]); // State untuk kategori dari database 
 
   // State untuk Load More
   const [visibleCount, setVisibleCount] = useState(15); // Tampilkan awal 15
@@ -32,6 +33,7 @@ export default function HomePage() {
 
   useEffect(() => {
     fetchEvents();
+    fetchKategoris(); // Fetch kategori dari database
     if (user) {
       checkAllBookmarks();
     }
@@ -48,6 +50,17 @@ export default function HomePage() {
       setEvents([]); 
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchKategoris = async () => {
+    try {
+      const response = await publicApi.getAllKategori();
+      const data = response.data;
+      setKategoris(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Gagal mengambil data kategori:", error);
+      setKategoris([]);
     }
   };
 
@@ -230,11 +243,11 @@ export default function HomePage() {
                         onChange={(e) => setFilterType(e.target.value)}
                     >
                         <option value="Tipe Acara">Semua Tipe</option>
-                        <option value="Seminar & Talkshow">Seminar</option>
-                        <option value="Lomba & Kompetisi">Lomba</option>
-                        <option value="Konser Musik">Konser</option>
-                        <option value="Workshop & Pelatihan">Workshop</option>
-                        <option value="Pameran & Expo">Pameran</option>
+                        {kategoris.map((kategori) => (
+                            <option key={kategori.id} value={kategori.nama_kategori}>
+                                {kategori.nama_kategori}
+                            </option>
+                        ))}
                     </select>
                     <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
                         <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>

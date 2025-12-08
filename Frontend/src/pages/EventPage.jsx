@@ -18,6 +18,7 @@ export default function EventPage() {
   const [filterType, setFilterType] = useState("Semua Kategori");
   const [filterMonth, setFilterMonth] = useState("Bulan");
   const [savedEvents, setSavedEvents] = useState({});
+  const [kategoris, setKategoris] = useState([]); // State untuk kategori dari database
 
   // Daftar Bulan untuk Dropdown
   const months = [
@@ -38,7 +39,20 @@ export default function EventPage() {
             setLoading(false);
         }
     };
+    
+    const fetchKategoris = async () => {
+        try {
+            const response = await publicApi.getAllKategori();
+            const data = response.data;
+            setKategoris(Array.isArray(data) ? data : []);
+        } catch (error) {
+            console.error("Error fetching categories:", error);
+            setKategoris([]);
+        }
+    };
+    
     fetchEvents();
+    fetchKategoris(); // Fetch kategori dari database
     if (user) {
       checkAllBookmarks();
     }
@@ -169,11 +183,11 @@ export default function EventPage() {
                         onChange={(e) => setFilterType(e.target.value)}
                     >
                         <option value="Semua Kategori">Semua Kategori</option>
-                        <option value="Seminar & Talkshow">Seminar</option>
-                        <option value="Lomba & Kompetisi">Lomba</option>
-                        <option value="Konser Musik">Konser</option>
-                        <option value="Workshop & Pelatihan">Workshop</option>
-                        <option value="Pameran & Expo">Pameran</option>
+                        {kategoris.map((kategori) => (
+                            <option key={kategori.id} value={kategori.nama_kategori}>
+                                {kategori.nama_kategori}
+                            </option>
+                        ))}
                     </select>
                     {/* Ikon Panah Bawah (Chevron Down) */}
                     <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
