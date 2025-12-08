@@ -47,7 +47,7 @@ export default function AdminLayout() {
           {/* Logo & User */}
           <div className="mb-8 border-b border-primary/30 pb-4">
             <h2 className="text-2xl font-extrabold text-primary">
-              Admin<span className='text-white'>Fest</span>
+              Unila<span className='text-white'>Fest</span>
             </h2>
             <p className="text-sm text-gray-400 mt-1">
               {user?.peran || 'Admin'} Panel: {user?.nama || 'Guest'}
